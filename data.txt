@@ -17,6 +17,3 @@ MACRO defined:
 BED_USES_THERMISTOR
 
 
-
-current function:
-tp_init()
