@@ -10,7 +10,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <inttypes.h>
+//#include <inttypes.h>
 
 // #include <util/delay.h>
 // #include <avr/pgmspace.h>
@@ -22,8 +22,15 @@
 // #include "Configuration.h"
 // #include "pins.h"
 
+enum AxisEnum {X_AXIS=0, Y_AXIS=1, Z_AXIS=2, E_AXIS=3};
 
-
+void setup(char *path);
+void loop();
+BOOL get_command();
+void process_commands();
+void get_coordinates();
+void prepare_move();
+void clamp_to_software_endstops(float target[3]);
 
 #ifndef CRITICAL_SECTION_START
   #define CRITICAL_SECTION_START  unsigned char _sreg = SREG; cli();
@@ -36,3 +43,5 @@
 
 
 #endif
+
+/* vi: set et sw=2 sts=2: */

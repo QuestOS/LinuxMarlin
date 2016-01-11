@@ -9,7 +9,11 @@ SREG
 	#define CRITICAL_SECTION_START  unsigned char _sreg = SREG; cli();
   	#define CRITICAL_SECTION_END    SREG = _sreg;
 
- pinMode()
+pinMode(): arduino
+
+millis(): arduino
+
+lround: libc
 
 
 MACROS Defined

@@ -17,12 +17,6 @@
 #define MASK(PIN)  (1 << PIN)
 #endif
 
-#ifndef CRITICAL_SECTION_START
-  /* TODO */
-  #define CRITICAL_SECTION_START  unsigned char _sreg = SREG; cli();
-  #define CRITICAL_SECTION_END    SREG = _sreg;
-#endif //CRITICAL_SECTION_START
-  
 
 #define _WRITE_NC(IO, v)  do { if (v) {DIO ##  IO ## _WPORT |= MASK(DIO ## IO ## _PIN); } else {DIO ##  IO ## _WPORT &= ~MASK(DIO ## IO ## _PIN); }; } while (0)
 
