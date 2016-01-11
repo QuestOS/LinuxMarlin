@@ -7,7 +7,7 @@
 #include "Marlin.h"
 #include "Configuration.h"
 #include <stdio.h>
-#include <stdlib>
+#include <stdlib.h>
 
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -19,7 +19,7 @@
 CardReader card;
 #endif
 float homing_feedrate[] = HOMING_FEEDRATE;
-BOOL axis_relative_modes[] = AXIS_RELATIVE_MODES;
+bool axis_relative_modes[] = AXIS_RELATIVE_MODES;
 int feedmultiply=100; //100->1 200->2
 int saved_feedmultiply;
 int extrudemultiply=100; //100->1 200->2
@@ -30,7 +30,7 @@ float endstop_adj[3]={0,0,0};
 #endif
 float min_pos[3] = { X_MIN_POS_DEFAULT, Y_MIN_POS_DEFAULT, Z_MIN_POS_DEFAULT };
 float max_pos[3] = { X_MAX_POS_DEFAULT, Y_MAX_POS_DEFAULT, Z_MAX_POS_DEFAULT };
-BOOL axis_known_position[3] = {FALSE, FALSE, FALSE};
+bool axis_known_position[3] = {false, false, false};
 
 // Extruder offset
 #if EXTRUDERS > 1
@@ -57,17 +57,17 @@ int EtoPPressure=0;
 #endif
 
 #ifdef FWRETRACT
-  BOOL autoretract_enabled=TRUE;
-  BOOL retracted=FALSE;
+  bool autoretract_enabled=true;
+  bool retracted=false;
   float retract_length=3, retract_feedrate=17*60, retract_zlift=0.8;
   float retract_recover_length=0, retract_recover_feedrate=8*60;
 #endif
 
 #ifdef ULTIPANEL
   #ifdef PS_DEFAULT_OFF
-    BOOL powersupply = FALSE;
+    bool powersupply = false;
   #else
-	  BOOL powersupply = TRUE;
+	  bool powersupply = true;
   #endif
 #endif
 
@@ -82,21 +82,21 @@ float delta[3] = {0.0, 0.0, 0.0};
 const char axis_codes[NUM_AXIS] = {'X', 'Y', 'Z', 'E'};
 static float destination[NUM_AXIS] = {  0.0, 0.0, 0.0, 0.0};
 static float offset[3] = {0.0, 0.0, 0.0};
-static BOOL home_all_axis = TRUE;
+static bool home_all_axis = true;
 static float feedrate = 1500.0, next_feedrate, saved_feedrate;
 static long gcode_N, gcode_LastN, Stopped_gcode_LastN = 0;
 
-static BOOL relative_mode = FALSE;  //Determines Absolute or Relative Coordinates
+static bool relative_mode = false;  //Determines Absolute or Relative Coordinates
 
 static char cmdbuffer[BUFSIZE][MAX_CMD_SIZE];
-static BOOL fromsd[BUFSIZE];
+static bool fromsd[BUFSIZE];
 static int bufindr = 0;
 static int bufindw = 0;
 static int buflen = 0;
 //static int i = 0;
 static char serial_char;
 static int serial_count = 0;
-static BOOL comment_mode = FALSE;
+static bool comment_mode = false;
 static char *strchr_pointer; // just a pointer to find chars in the cmd string like X, Y, Z, E, etc
 
 const int sensitive_pins[] = SENSITIVE_PINS; // Sensitive pin list for M42
@@ -115,14 +115,13 @@ unsigned long stoptime=0;
 static uint8_t tmp_extruder;
 
 
-BOOL Stopped=FALSE;
-
 #if NUM_SERVOS > 0
   Servo servos[NUM_SERVOS];
 #endif
 
-BOOL CooldownNoWait = TRUE;
-BOOL target_direction;
+bool CooldownNoWait = true;
+bool target_direction;
+bool Stopped = false;
 
 /*typedef struct line {
 	char *gcode;
@@ -142,7 +141,7 @@ float code_value()
   return (strtod(&cmdbuffer[strchr_pointer - cmdbuffer + 1], NULL));
 }
 
-BOOL code_seen(char code)
+bool code_seen(char code)
 {
   strchr_pointer = strchr(cmdbuffer, code);
   return (strchr_pointer != NULL);  //Return True if a character was found
@@ -184,11 +183,15 @@ static void homeaxis(int axis) {
 }
 
 /***********************************/
+int setup(char *);
+void loop();
+//int parse(char *line, line *l);
+void get_command();
 
 int main(int argc, char *argv[]) {
 
   if (argc != 2) {
-    printf("Wrong number of arguments provided... Provided %d instead 
+    printf("Wrong number of arguments provided... Provided %d instead \
             of 2\nmarlin /path/to/file\n", argc);
     exit(1);
   }
@@ -200,7 +203,7 @@ int main(int argc, char *argv[]) {
   return 0;
 }
 
-void setup(char *path)
+int setup(char *path)
 {
   int file;
 
@@ -210,9 +213,9 @@ void setup(char *path)
     exit(1);
   }
 
-  file_size = s->st_size;
+  file_size = s.st_size;
 
-  if ((file = open(path, O_RDONLY)) == NULL) {
+  if ((file = open(path, O_RDONLY))) {
     printf("Error opening %s\n", path);
     exit(1);
   }
@@ -222,6 +225,8 @@ void setup(char *path)
     printf("Error reading file\n");
     exit(1);
   }
+
+  return file;
 }
 
 /*
@@ -290,22 +295,22 @@ void loop(int fd) {
   }
 }
 
-BOOL get_command()
+bool get_command()
 {
   while (current_read < file_size) {
     serial_char = file_buf[current_read++];
     if(serial_char == '\n' ||
        serial_char == '\r' ||
-       (serial_char == ':' && comment_mode == FALSE) ||
+       (serial_char == ':' && comment_mode == false) ||
        serial_count >= (MAX_CMD_SIZE - 1) )
     {
       if(!serial_count) { //if empty line
-        comment_mode = FALSE; //for new command
-        return FALSE;
+        comment_mode = false; //for new command
+        return;
       }
       cmdbuffer[serial_count] = 0;  //terminate string
       if(!comment_mode){
-        comment_mode = FALSE; //for new command
+        comment_mode = false; //for new command
 
         if(strchr(cmdbuffer, 'N') != NULL)
         {
@@ -325,7 +330,7 @@ BOOL get_command()
           case 1:
           case 2:
           case 3:
-            if(Stopped == FALSE) { // If printer is stopped by an error the G[0-3] codes are ignored.
+            if(Stopped == false) { // If printer is stopped by an error the G[0-3] codes are ignored.
             }
             else {
               printf("MSG_ERR_STOPPED\n");
@@ -333,18 +338,25 @@ BOOL get_command()
             break;
           default:
             break;
+          }
         }
+        serial_count = 0; //clear buffer
+      }
+      else
+      {
+        if(serial_char == ';') comment_mode = true;
+        if(!comment_mode) cmdbuffer[serial_count++] = serial_char;
       }
       serial_count = 0; //clear buffer
     }
     else
     {
-      if(serial_char == ';') comment_mode = TRUE;
+      if(serial_char == ';') comment_mode = true;
       if(!comment_mode) cmdbuffer[serial_count++] = serial_char;
     }
   }
 
-  return TRUE;
+  return true;
 }
 
 #define HOMEAXIS(LETTER) homeaxis(LETTER##_AXIS)
@@ -362,7 +374,7 @@ void process_commands()
     {
     case 0: // G0 -> G1
     case 1: // G1
-      if(Stopped == FALSE) {
+      if(Stopped == false) {
         get_coordinates(); // For X Y Z E F
         prepare_move();
         //ClearToSend();
@@ -380,7 +392,7 @@ void process_commands()
       feedmultiply = 100;
       previous_millis_cmd = millis();
 
-      enable_endstops(TRUE);
+      enable_endstops(true);
 
       for(int8_t i=0; i < NUM_AXIS; i++) {
         destination[i] = current_position[i];
@@ -396,12 +408,12 @@ void process_commands()
 
 void get_coordinates()
 {
-  BOOL seen[4]={FALSE,FALSE,FALSE,FALSE};
+  bool seen[4]={false,false,false,false};
   for(char i=0; i < NUM_AXIS; i++) {
     if(code_seen(axis_codes[i]))
     {
       destination[i] = (float)code_value() + (axis_relative_modes[i] || relative_mode)*current_position[i];
-      seen[i]=TRUE;
+      seen[i]=true;
     }
     else destination[i] = current_position[i]; //Are these else lines really needed?
   }

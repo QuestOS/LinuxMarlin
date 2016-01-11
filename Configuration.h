@@ -1,6 +1,8 @@
 #ifndef CONFIGURATION_H
 #define CONFIGURATION_H
 
+#include <stdbool.h>
+
 // This configuration file contains the basic settings.
 // Advanced settings can be found in Configuration_adv.h
 // BASIC SETTINGS: select your board type, temperature sensor type, axis scaling, and endstop configuration
@@ -651,6 +653,6 @@ const BOOL Z_MAX_ENDSTOP_INVERTING = FALSE; // set to true to invert the logic o
 //#define SERVO_ENDSTOP_ANGLES {0,0, 0,0, 70,0} // X,Y,Z Axis Extend and Retract angles
 
 #include "Configuration_adv.h"
-#include "thermistortables.h"
+//#include "thermistortables.h"
 
 #endif //__CONFIGURATION_H
