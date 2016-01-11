@@ -7,7 +7,7 @@
 #include "Marlin.h"
 #include "Configuration.h"
 #include <stdio.h>
-#include <stdlib>
+#include <stdlib.h>
 
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -15,7 +15,7 @@
 
 static char cmdbuffer[MAX_CMD_SIZE];
 
-BOOL Stopped = FALSE;
+bool Stopped = false;
 
 /*typedef struct line {
 	char *gcode;
@@ -28,14 +28,15 @@ int file_size;
 int current_read = 0;
 
 
-void setup(char *path);
+int setup(char *);
 void loop();
 //int parse(char *line, line *l);
+void get_command();
 
 int main(int argc, char *argv[]) {
 
   if (argc != 2) {
-    printf("Wrong number of arguments provided... Provided %d instead 
+    printf("Wrong number of arguments provided... Provided %d instead \
             of 2\nmarlin /path/to/file\n", argc);
     exit(1);
   }
@@ -47,7 +48,7 @@ int main(int argc, char *argv[]) {
   return 0;
 }
 
-void setup(char *path)
+int setup(char *path)
 {
   int file;
 
@@ -57,9 +58,9 @@ void setup(char *path)
     exit(1);
   }
 
-  file_size = s->st_size;
+  file_size = s.st_size;
 
-  if ((file = open(path, O_RDONLY)) == NULL) {
+  if ((file = open(path, O_RDONLY))) {
     printf("Error opening %s\n", path);
     exit(1);
   }
@@ -69,6 +70,8 @@ void setup(char *path)
     printf("Error reading file\n");
     exit(1);
   }
+
+  return file;
 }
 
 /*
@@ -134,23 +137,23 @@ void get_command()
 {
   char serial_char;
   int serial_count = 0;
-  BOOL comment_mode = FALSE;
+  bool comment_mode = false;
   char *strchr_pointer;
 
   while (current_read < file_size) {
     serial_char = file_buf[current_read++];
     if(serial_char == '\n' ||
        serial_char == '\r' ||
-       (serial_char == ':' && comment_mode == FALSE) ||
+       (serial_char == ':' && comment_mode == false) ||
        serial_count >= (MAX_CMD_SIZE - 1) )
     {
       if(!serial_count) { //if empty line
-        comment_mode = FALSE; //for new command
+        comment_mode = false; //for new command
         return;
       }
       cmdbuffer[serial_count] = 0;  //terminate string
       if(!comment_mode){
-        comment_mode = FALSE; //for new command
+        comment_mode = false; //for new command
 
         if(strchr(cmdbuffer, 'N') != NULL)
         {
@@ -170,7 +173,7 @@ void get_command()
           case 1:
           case 2:
           case 3:
-            if(Stopped == FALSE) { // If printer is stopped by an error the G[0-3] codes are ignored.
+            if(Stopped == false) { // If printer is stopped by an error the G[0-3] codes are ignored.
             }
             else {
               printf("MSG_ERR_STOPPED\n");
@@ -178,14 +181,15 @@ void get_command()
             break;
           default:
             break;
+          }
         }
+        serial_count = 0; //clear buffer
       }
-      serial_count = 0; //clear buffer
-    }
-    else
-    {
-      if(serial_char == ';') comment_mode = true;
-      if(!comment_mode) cmdbuffer[serial_count++] = serial_char;
+      else
+      {
+        if(serial_char == ';') comment_mode = true;
+        if(!comment_mode) cmdbuffer[serial_count++] = serial_char;
+      }
     }
   }
 }
