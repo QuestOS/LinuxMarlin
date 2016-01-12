@@ -1,6 +1,6 @@
 
 CC=gcc
-CFLAGS=-I.
+CFLAGS=-I. -std=c99
 DEPS = Marlin.h
 
 
