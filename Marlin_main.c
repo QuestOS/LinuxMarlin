@@ -149,7 +149,9 @@ bool code_seen(char code)
 
 void kill()
 {
-  TODO
+  cli();
+  //TODO
+  //disable_heater();
 }
 
 #define XYZ_CONSTS_FROM_CONFIG(type, array, CONFIG) \

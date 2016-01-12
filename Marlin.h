@@ -33,6 +33,9 @@ void prepare_move();
 void clamp_to_software_endstops(float target[3]);
 void kill();
 
+//TODO
+inline void cli() {};
+
 #ifndef CRITICAL_SECTION_START
   #define CRITICAL_SECTION_START  unsigned char _sreg = SREG; cli();
   #define CRITICAL_SECTION_END    SREG = _sreg;

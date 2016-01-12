@@ -164,9 +164,33 @@ static float analog2temp(int raw, uint8_t e) {
   if(e >= EXTRUDERS)
   {
     printf("Invalid extruder number: %u\n", (unsigned int)e);
-    //TODO
     kill();
   }
+
+  if(heater_ttbl_map[e] != NULL)
+  {
+    float celsius = 0;
+    uint8_t i;
+    short (*tt)[][2] = (short (*)[][2])(heater_ttbl_map[e]);
+
+    for (i=1; i<heater_ttbllen_map[e]; i++)
+    {
+      if (PGM_RD_W((*tt)[i][0]) > raw)
+      {
+        celsius = PGM_RD_W((*tt)[i-1][1]) + 
+          (raw - PGM_RD_W((*tt)[i-1][0])) * 
+          (float)(PGM_RD_W((*tt)[i][1]) - PGM_RD_W((*tt)[i-1][1])) /
+          (float)(PGM_RD_W((*tt)[i][0]) - PGM_RD_W((*tt)[i-1][0]));
+        break;
+      }
+    }
+
+    // Overflow: Set to last value in the table
+    if (i == heater_ttbllen_map[e]) celsius = PGM_RD_W((*tt)[i-1][1]);
+
+    return celsius;
+  }
+  return ((raw * ((5.0 * 100.0) / 1024.0) / OVERSAMPLENR) * TEMP_SENSOR_AD595_GAIN) + TEMP_SENSOR_AD595_OFFSET;
 }
 
 /* Called to get the raw values into the the actual temperatures. The raw values are created in interrupt context,
