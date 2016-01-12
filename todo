@@ -13,6 +13,8 @@ pinMode(): arduino
 
 millis(): arduino
 
+constrain(): arduino
+
 (type:)
 byte: arduino
 
