@@ -401,7 +401,7 @@ void process_commands()
 
       enable_endstops(true);
 
-      for(int8_t i=0; i < NUM_AXIS; i++) {
+      for(char i=0; i < NUM_AXIS; i++) {
         destination[i] = current_position[i];
       }
       feedrate = 0.0;

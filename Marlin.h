@@ -26,7 +26,7 @@ enum AxisEnum {X_AXIS=0, Y_AXIS=1, Z_AXIS=2, E_AXIS=3};
 
 void setup(char *path);
 void loop();
-BOOL get_command();
+bool get_command();
 void process_commands();
 void get_coordinates();
 void prepare_move();

@@ -267,12 +267,12 @@
 #endif
 
 // The pullups are needed if you directly connect a mechanical endswitch between the signal and ground pins.
-const BOOL X_MIN_ENDSTOP_INVERTING = FALSE; // set to true to invert the logic of the endstop.
-const BOOL Y_MIN_ENDSTOP_INVERTING = FALSE; // set to true to invert the logic of the endstop.
-const BOOL Z_MIN_ENDSTOP_INVERTING = TRUE; // set to true to invert the logic of the endstop.
-const BOOL X_MAX_ENDSTOP_INVERTING = FALSE; // set to true to invert the logic of the endstop.
-const BOOL Y_MAX_ENDSTOP_INVERTING = FALSE; // set to true to invert the logic of the endstop.
-const BOOL Z_MAX_ENDSTOP_INVERTING = FALSE; // set to true to invert the logic of the endstop.
+const bool X_MIN_ENDSTOP_INVERTING = FALSE; // set to true to invert the logic of the endstop.
+const bool Y_MIN_ENDSTOP_INVERTING = FALSE; // set to true to invert the logic of the endstop.
+const bool Z_MIN_ENDSTOP_INVERTING = TRUE; // set to true to invert the logic of the endstop.
+const bool X_MAX_ENDSTOP_INVERTING = FALSE; // set to true to invert the logic of the endstop.
+const bool Y_MAX_ENDSTOP_INVERTING = FALSE; // set to true to invert the logic of the endstop.
+const bool Z_MAX_ENDSTOP_INVERTING = FALSE; // set to true to invert the logic of the endstop.
 //#define DISABLE_MAX_ENDSTOPS
 //#define DISABLE_MIN_ENDSTOPS
 
