@@ -157,6 +157,38 @@ unsigned long watchmillis[EXTRUDERS] = ARRAY_BY_EXTRUDERS(0,0,0);
 #define SOFT_PWM_SCALE 0
 #endif
 
+#define PGM_RD_W(x)   (short)pgm_read_word(&x)
+// Derived from RepRap FiveD extruder::getTemperature()
+// For hot end temperature measurement.
+static float analog2temp(int raw, uint8_t e) {
+  if(e >= EXTRUDERS)
+  {
+    printf("Invalid extruder number: %u\n", (unsigned int)e);
+    //TODO
+    kill();
+  }
+}
+
+/* Called to get the raw values into the the actual temperatures. The raw values are created in interrupt context,
+    and this function is called from normal context as it is too slow to run in interrupts and will block the stepper routine otherwise */
+static void updateTemperaturesFromRawValues()
+{
+    for(uint8_t e=0;e<EXTRUDERS;e++)
+    {
+        current_temperature[e] = analog2temp(current_temperature_raw[e], e);
+    }
+    current_temperature_bed = analog2tempBed(current_temperature_bed_raw);
+    #ifdef TEMP_SENSOR_1_AS_REDUNDANT
+      redundant_temperature = analog2temp(redundant_temperature_raw, 1);
+    #endif
+    //Reset the watchdog after we know we have a temperature measurement.
+    watchdog_reset();
+
+    CRITICAL_SECTION_START;
+    temp_meas_ready = false;
+    CRITICAL_SECTION_END;
+}
+
 void manage_heater()
 {
   float pid_input;
@@ -166,5 +198,5 @@ void manage_heater()
     return; 
 
   updateTemperaturesFromRawValues();
-
+  //TODO
 }

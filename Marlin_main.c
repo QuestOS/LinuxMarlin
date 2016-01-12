@@ -180,6 +180,7 @@ static void homeaxis(int axis) {
     feedrate = homing_feedrate[axis];
     plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate/60, active_extruder);
     st_synchronize();
+    //TODO
 }
 
 /***********************************/
@@ -382,6 +383,7 @@ void process_commands()
       }
       //break;
     }
+/*
     case 28: //G28 Home all Axis one at a time
 #ifdef ENABLE_AUTO_BED_LEVELING
       //Reset the plane ("erase" all leveling data)
@@ -403,6 +405,8 @@ void process_commands()
 
       if((home_all_axis) || (code_seen(axis_codes[X_AXIS])))
         HOMEAXIS(X);
+      TODO
+*/
   }
 }
 
