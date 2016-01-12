@@ -6,8 +6,10 @@
 
 #include "Marlin.h"
 #include "Configuration.h"
+#include "Arduino.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/sysinfo.h>
 
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -207,8 +209,8 @@ int main(int argc, char *argv[]) {
 int setup(char *path)
 {
   int file;
-
   struct stat s;
+
   if (stat(path, &s) == -1) {
     printf("Error stating %s\n", path);
     exit(1);
@@ -225,6 +227,12 @@ int setup(char *path)
   if (read(file, file_buf, file_size) < file_size) {
     printf("Error reading file\n");
     exit(1);
+  }
+
+  //init timer
+  if(timeInit() < 0) {
+    fprintf(stderr, "Failed to init timer\n");
+    exit(-1);
   }
 
   return file;
@@ -446,7 +454,7 @@ void prepare_move()
 {
   clamp_to_software_endstops(destination);
 
-  //TODO
+
   previous_millis_cmd = millis();
 
   // Do not use feedmultiply for E or Z only moves
