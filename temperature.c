@@ -193,6 +193,30 @@ static float analog2temp(int raw, uint8_t e) {
   return ((raw * ((5.0 * 100.0) / 1024.0) / OVERSAMPLENR) * TEMP_SENSOR_AD595_GAIN) + TEMP_SENSOR_AD595_OFFSET;
 }
 
+// Derived from RepRap FiveD extruder::getTemperature()
+// For bed temperature measurement.
+static float analog2tempBed(int raw) {
+  float celsius = 0;
+  byte i;
+
+  for (i=1; i<BEDTEMPTABLE_LEN; i++)
+  {
+    if (PGM_RD_W(BEDTEMPTABLE[i][0]) > raw)
+    {
+      celsius  = PGM_RD_W(BEDTEMPTABLE[i-1][1]) + 
+        (raw - PGM_RD_W(BEDTEMPTABLE[i-1][0])) * 
+        (float)(PGM_RD_W(BEDTEMPTABLE[i][1]) - PGM_RD_W(BEDTEMPTABLE[i-1][1])) /
+        (float)(PGM_RD_W(BEDTEMPTABLE[i][0]) - PGM_RD_W(BEDTEMPTABLE[i-1][0]));
+      break;
+    }
+  }
+
+  // Overflow: Set to last value in the table
+  if (i == BEDTEMPTABLE_LEN) celsius = PGM_RD_W(BEDTEMPTABLE[i-1][1]);
+
+  return celsius;
+}
+
 /* Called to get the raw values into the the actual temperatures. The raw values are created in interrupt context,
     and this function is called from normal context as it is too slow to run in interrupts and will block the stepper routine otherwise */
 static void updateTemperaturesFromRawValues()
@@ -202,9 +226,6 @@ static void updateTemperaturesFromRawValues()
         current_temperature[e] = analog2temp(current_temperature_raw[e], e);
     }
     current_temperature_bed = analog2tempBed(current_temperature_bed_raw);
-    #ifdef TEMP_SENSOR_1_AS_REDUNDANT
-      redundant_temperature = analog2temp(redundant_temperature_raw, 1);
-    #endif
     //Reset the watchdog after we know we have a temperature measurement.
     watchdog_reset();
 

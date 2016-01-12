@@ -35,6 +35,7 @@ void kill();
 
 //TODO
 inline void cli() {};
+unsigned char SREG;
 
 #ifndef CRITICAL_SECTION_START
   #define CRITICAL_SECTION_START  unsigned char _sreg = SREG; cli();
