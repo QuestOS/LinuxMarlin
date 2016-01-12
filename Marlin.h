@@ -18,9 +18,9 @@
 // #include <avr/interrupt.h>
 
 
-// #include "fastio.h"
-// #include "Configuration.h"
-// #include "pins.h"
+#include "fastio.h"
+#include "Configuration.h"
+#include "pins.h"
 
 enum AxisEnum {X_AXIS=0, Y_AXIS=1, Z_AXIS=2, E_AXIS=3};
 
@@ -31,6 +31,7 @@ void process_commands();
 void get_coordinates();
 void prepare_move();
 void clamp_to_software_endstops(float target[3]);
+void kill();
 
 #ifndef CRITICAL_SECTION_START
   #define CRITICAL_SECTION_START  unsigned char _sreg = SREG; cli();
