@@ -164,9 +164,57 @@ static float analog2temp(int raw, uint8_t e) {
   if(e >= EXTRUDERS)
   {
     printf("Invalid extruder number: %u\n", (unsigned int)e);
-    //TODO
     kill();
   }
+
+  if(heater_ttbl_map[e] != NULL)
+  {
+    float celsius = 0;
+    uint8_t i;
+    short (*tt)[][2] = (short (*)[][2])(heater_ttbl_map[e]);
+
+    for (i=1; i<heater_ttbllen_map[e]; i++)
+    {
+      if (PGM_RD_W((*tt)[i][0]) > raw)
+      {
+        celsius = PGM_RD_W((*tt)[i-1][1]) + 
+          (raw - PGM_RD_W((*tt)[i-1][0])) * 
+          (float)(PGM_RD_W((*tt)[i][1]) - PGM_RD_W((*tt)[i-1][1])) /
+          (float)(PGM_RD_W((*tt)[i][0]) - PGM_RD_W((*tt)[i-1][0]));
+        break;
+      }
+    }
+
+    // Overflow: Set to last value in the table
+    if (i == heater_ttbllen_map[e]) celsius = PGM_RD_W((*tt)[i-1][1]);
+
+    return celsius;
+  }
+  return ((raw * ((5.0 * 100.0) / 1024.0) / OVERSAMPLENR) * TEMP_SENSOR_AD595_GAIN) + TEMP_SENSOR_AD595_OFFSET;
+}
+
+// Derived from RepRap FiveD extruder::getTemperature()
+// For bed temperature measurement.
+static float analog2tempBed(int raw) {
+  float celsius = 0;
+  byte i;
+
+  for (i=1; i<BEDTEMPTABLE_LEN; i++)
+  {
+    if (PGM_RD_W(BEDTEMPTABLE[i][0]) > raw)
+    {
+      celsius  = PGM_RD_W(BEDTEMPTABLE[i-1][1]) + 
+        (raw - PGM_RD_W(BEDTEMPTABLE[i-1][0])) * 
+        (float)(PGM_RD_W(BEDTEMPTABLE[i][1]) - PGM_RD_W(BEDTEMPTABLE[i-1][1])) /
+        (float)(PGM_RD_W(BEDTEMPTABLE[i][0]) - PGM_RD_W(BEDTEMPTABLE[i-1][0]));
+      break;
+    }
+  }
+
+  // Overflow: Set to last value in the table
+  if (i == BEDTEMPTABLE_LEN) celsius = PGM_RD_W(BEDTEMPTABLE[i-1][1]);
+
+  return celsius;
 }
 
 /* Called to get the raw values into the the actual temperatures. The raw values are created in interrupt context,
@@ -178,9 +226,6 @@ static void updateTemperaturesFromRawValues()
         current_temperature[e] = analog2temp(current_temperature_raw[e], e);
     }
     current_temperature_bed = analog2tempBed(current_temperature_bed_raw);
-    #ifdef TEMP_SENSOR_1_AS_REDUNDANT
-      redundant_temperature = analog2temp(redundant_temperature_raw, 1);
-    #endif
     //Reset the watchdog after we know we have a temperature measurement.
     watchdog_reset();
 
@@ -198,5 +243,70 @@ void manage_heater()
     return; 
 
   updateTemperaturesFromRawValues();
-  //TODO
+  
+  for(int e = 0; e < EXTRUDERS; e++) 
+  {
+    pid_input = current_temperature[e];
+
+    pid_error[e] = target_temperature[e] - pid_input;
+    if(pid_error[e] > PID_FUNCTIONAL_RANGE) {
+      pid_output = BANG_MAX;
+      pid_reset[e] = true;
+    }
+    else if(pid_error[e] < -PID_FUNCTIONAL_RANGE || target_temperature[e] == 0) {
+      pid_output = 0;
+      pid_reset[e] = true;
+    }
+    else {
+      if(pid_reset[e] == true) {
+        temp_iState[e] = 0.0;
+        pid_reset[e] = false;
+      }
+      pTerm[e] = Kp * pid_error[e];
+      temp_iState[e] += pid_error[e];
+      temp_iState[e] = constrain(temp_iState[e], temp_iState_min[e], temp_iState_max[e]);
+      iTerm[e] = Ki * temp_iState[e];
+
+      //K1 defined in Configuration.h in the PID settings
+      #define K2 (1.0-K1)
+      dTerm[e] = (Kd * (pid_input - temp_dState[e]))*K2 + (K1 * dTerm[e]);
+      pid_output = constrain(pTerm[e] + iTerm[e] - dTerm[e], 0, PID_MAX);
+    }
+    temp_dState[e] = pid_input;
+
+    // Check if temperature is within the correct range
+    if((current_temperature[e] > minttemp[e]) && (current_temperature[e] < maxttemp[e])) 
+    {
+      soft_pwm[e] = (int)pid_output >> 1;
+    }
+    else {
+      soft_pwm[e] = 0;
+    }
+  }
+
+  #ifndef PIDTEMPBED
+  if(millis() - previous_millis_bed_heater < BED_CHECK_INTERVAL)
+    return;
+  previous_millis_bed_heater = millis();
+  #endif
+
+  #if TEMP_SENSOR_BED != 0
+  // Check if temperature is within the correct range
+  if((current_temperature_bed > BED_MINTEMP) && (current_temperature_bed < BED_MAXTEMP))
+  {
+    if(current_temperature_bed >= target_temperature_bed)
+    {
+      soft_pwm_bed = 0;
+    }
+    else 
+    {
+      soft_pwm_bed = MAX_BED_POWER>>1;
+    }
+  }
+  else
+  {
+    soft_pwm_bed = 0;
+    WRITE(HEATER_BED_PIN,LOW);
+  }
+  #endif
 }

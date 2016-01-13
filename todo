@@ -13,6 +13,11 @@ pinMode(): arduino
 
 millis(): arduino
 
+constrain(): arduino
+
+(type:)
+byte: arduino
+
 lround: libc
 
 
@@ -20,3 +25,6 @@ MACROS Defined
 
 SUICIDE_PIN => NOT Defined
 
+
+
+********* true/false definition?

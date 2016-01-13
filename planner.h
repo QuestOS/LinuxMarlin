@@ -114,6 +114,7 @@ void plan_buffer_line(float x, float y, float z, const float e, float feed_rate,
 
 // Set position. Used for G92 instructions.
 void plan_set_position(float x, float y, float z, const float e);
+void check_axes_activity();
 
 // Gets the current block. Returns NULL if buffer empty
 FORCE_INLINE bool blocks_queued() 

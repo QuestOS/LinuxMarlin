@@ -55,6 +55,7 @@
 #include "planner.h"
 #include "stepper.h"
 #include "temperature.h"
+#include "language.h"
 
 //===========================================================================
 //=============================public variables ============================
@@ -115,31 +116,6 @@ static long x_segment_time[3]={MAX_FREQ_TIME + 1,0,0};     // Segment times (in 
 static long y_segment_time[3]={MAX_FREQ_TIME + 1,0,0};
 #endif
 
-/*
-void plan_set_position(float x, float y, float z, const float e)
-{
-  apply_rotation_xyz(plan_bed_level_matrix, &x, &y, &z);
-
-  position[X_AXIS] = lround(x*axis_steps_per_unit[X_AXIS]);
-  position[Y_AXIS] = lround(y*axis_steps_per_unit[Y_AXIS]);
-  position[Z_AXIS] = lround(z*axis_steps_per_unit[Z_AXIS]);     
-  position[E_AXIS] = lround(e*axis_steps_per_unit[E_AXIS]);  
-  st_set_position(position[X_AXIS], position[Y_AXIS], position[Z_AXIS], position[E_AXIS]);
-  previous_nominal_speed = 0.0; // Resets planner junction speeds. Assumes start from rest.
-  previous_speed[0] = 0.0;
-  previous_speed[1] = 0.0;
-  previous_speed[2] = 0.0;
-  previous_speed[3] = 0.0;
-}
-*/
-
-//===========================================================================
-//=================semi-private variables, used in inline  functions    =====
-//===========================================================================
-block_t block_buffer[BLOCK_BUFFER_SIZE];            // A ring buffer for motion instfructions
-volatile unsigned char block_buffer_head;           // Index of the next block to be pushed
-volatile unsigned char block_buffer_tail;           // Index of the block to process now
-
 // Returns the index of the next block in the ring buffer
 // NOTE: Removed modulo (%) operator, which uses an expensive divide and multiplication.
 static int8_t next_block_index(int8_t block_index) {
@@ -150,6 +126,7 @@ static int8_t next_block_index(int8_t block_index) {
   return(block_index);
 }
 
+
 // Returns the index of the previous block in the ring buffer
 static int8_t prev_block_index(int8_t block_index) {
   if (block_index == 0) { 
@@ -159,7 +136,9 @@ static int8_t prev_block_index(int8_t block_index) {
   return(block_index);
 }
 
-/////////////////////////////////////////////////////////////////////////////////////////
+//===========================================================================
+//=============================functions         ============================
+//===========================================================================
 
 // Calculates the distance (not time) it takes to accelerate from initial_rate to target_rate using the 
 // given acceleration:
@@ -189,7 +168,6 @@ FORCE_INLINE float intersection_distance(float initial_rate, float final_rate, f
     return 0.0;  // acceleration was 0, set intersection distance to 0
   }
 }
-
 
 // Calculates trapezoid parameters so that the entry- and exit-speed is compensated by the provided factors.
 
@@ -250,6 +228,15 @@ void calculate_trapezoid_for_block(block_t *block, float entry_factor, float exi
 FORCE_INLINE float max_allowable_speed(float acceleration, float target_velocity, float distance) {
   return  sqrt(target_velocity*target_velocity-2*acceleration*distance);
 }
+
+// "Junction jerk" in this context is the immediate change in speed at the junction of two blocks.
+// This method will calculate the junction jerk as the euclidean distance between the nominal 
+// velocities of the respective blocks.
+//inline float junction_jerk(block_t *before, block_t *after) {
+//  return sqrt(
+//    pow((before->speed_x-after->speed_x), 2)+pow((before->speed_y-after->speed_y), 2));
+//}
+
 
 // The kernel called by planner_recalculate() when scanning the plan from last to first entry.
 void planner_reverse_pass_kernel(block_t *previous, block_t *current, block_t *next) {
@@ -396,14 +383,148 @@ void planner_recalculate() {
   planner_recalculate_trapezoids();
 }
 
+void plan_init() {
+  block_buffer_head = 0;
+  block_buffer_tail = 0;
+  memset(position, 0, sizeof(position)); // clear position
+  previous_speed[0] = 0.0;
+  previous_speed[1] = 0.0;
+  previous_speed[2] = 0.0;
+  previous_speed[3] = 0.0;
+  previous_nominal_speed = 0.0;
+}
 
+
+
+
+#ifdef AUTOTEMP
+void getHighESpeed()
+{
+  static float oldt=0;
+  if(!autotemp_enabled){
+    return;
+  }
+  if(degTargetHotend0()+2<autotemp_min) {  //probably temperature set to zero.
+    return; //do nothing
+  }
+
+  float high=0.0;
+  uint8_t block_index = block_buffer_tail;
+
+  while(block_index != block_buffer_head) {
+    if((block_buffer[block_index].steps_x != 0) ||
+      (block_buffer[block_index].steps_y != 0) ||
+      (block_buffer[block_index].steps_z != 0)) {
+      float se=(float(block_buffer[block_index].steps_e)/float(block_buffer[block_index].step_event_count))*block_buffer[block_index].nominal_speed;
+      //se; mm/sec;
+      if(se>high)
+      {
+        high=se;
+      }
+    }
+    block_index = (block_index+1) & (BLOCK_BUFFER_SIZE - 1);
+  }
+
+  float g=autotemp_min+high*autotemp_factor;
+  float t=g;
+  if(t<autotemp_min)
+    t=autotemp_min;
+  if(t>autotemp_max)
+    t=autotemp_max;
+  if(oldt>t)
+  {
+    t=AUTOTEMP_OLDWEIGHT*oldt+(1-AUTOTEMP_OLDWEIGHT)*t;
+  }
+  oldt=t;
+  setTargetHotend0(t);
+}
+#endif
+
+void check_axes_activity()
+{
+  unsigned char x_active = 0;
+  unsigned char y_active = 0;  
+  unsigned char z_active = 0;
+  unsigned char e_active = 0;
+  unsigned char tail_fan_speed = fanSpeed;
+  #ifdef BARICUDA
+  unsigned char tail_valve_pressure = ValvePressure;
+  unsigned char tail_e_to_p_pressure = EtoPPressure;
+  #endif
+  block_t *block;
+
+  if(block_buffer_tail != block_buffer_head)
+  {
+    uint8_t block_index = block_buffer_tail;
+    tail_fan_speed = block_buffer[block_index].fan_speed;
+    #ifdef BARICUDA
+    tail_valve_pressure = block_buffer[block_index].valve_pressure;
+    tail_e_to_p_pressure = block_buffer[block_index].e_to_p_pressure;
+    #endif
+    while(block_index != block_buffer_head)
+    {
+      block = &block_buffer[block_index];
+      if(block->steps_x != 0) x_active++;
+      if(block->steps_y != 0) y_active++;
+      if(block->steps_z != 0) z_active++;
+      if(block->steps_e != 0) e_active++;
+      block_index = (block_index+1) & (BLOCK_BUFFER_SIZE - 1);
+    }
+  }
+  if((DISABLE_X) && (x_active == 0)) disable_x();
+  if((DISABLE_Y) && (y_active == 0)) disable_y();
+  if((DISABLE_Z) && (z_active == 0)) disable_z();
+  if((DISABLE_E) && (e_active == 0))
+  {
+    disable_e0();
+    disable_e1();
+    disable_e2(); 
+  }
+#if defined(FAN_PIN) && FAN_PIN > -1
+  #ifdef FAN_KICKSTART_TIME
+    static unsigned long fan_kick_end;
+    if (tail_fan_speed) {
+      if (fan_kick_end == 0) {
+        // Just starting up fan - run at full power.
+        fan_kick_end = millis() + FAN_KICKSTART_TIME;
+        tail_fan_speed = 255;
+      } else if (fan_kick_end > millis())
+        // Fan still spinning up.
+        tail_fan_speed = 255;
+    } else {
+      fan_kick_end = 0;
+    }
+  #endif//FAN_KICKSTART_TIME
+  #ifdef FAN_SOFT_PWM
+  fanSpeedSoftPwm = tail_fan_speed;
+  #else
+  analogWrite(FAN_PIN,tail_fan_speed);
+  #endif//!FAN_SOFT_PWM
+#endif//FAN_PIN > -1
+#ifdef AUTOTEMP
+  getHighESpeed();
+#endif
+
+#ifdef BARICUDA
+  #if defined(HEATER_1_PIN) && HEATER_1_PIN > -1
+      analogWrite(HEATER_1_PIN,tail_valve_pressure);
+  #endif
+
+  #if defined(HEATER_2_PIN) && HEATER_2_PIN > -1
+      analogWrite(HEATER_2_PIN,tail_e_to_p_pressure);
+  #endif
+#endif
+}
+
+
+float junction_deviation = 0.1;
 // Add a new linear movement to the buffer. steps_x, _y and _z is the absolute position in 
 // mm. Microseconds specify how many microseconds the move should take to perform. To aid acceleration
 // calculation the caller must also provide the physical length of the line in millimeters.
 #ifdef ENABLE_AUTO_BED_LEVELING
 void plan_buffer_line(float x, float y, float z, const float e, float feed_rate, const uint8_t extruder)
 #else
-void plan_buffer_line(const float x, const float y, const float z, const float e, float feed_rate, const uint8_t extruder)
+void plan_buffer_line(const float &x, const float &y, const float &z, const float &e, float feed_rate, const uint8_t &extruder)
 #endif  //ENABLE_AUTO_BED_LEVELING
 {
   // Calculate the buffer head after we push this byte
@@ -413,13 +534,13 @@ void plan_buffer_line(const float x, const float y, const float z, const float e
   // Rest here until there is room in the buffer.
   while(block_buffer_tail == next_buffer_head)
   {
-    //manage_heater(); 
-    //manage_inactivity(); 
-    //lcd_update();
+    manage_heater(); 
+    manage_inactivity(); 
+    lcd_update();
   }
 
 #ifdef ENABLE_AUTO_BED_LEVELING
-  apply_rotation_xyz(plan_bed_level_matrix, &x, &y, &z);
+  apply_rotation_xyz(plan_bed_level_matrix, x, y, z);
 #endif // ENABLE_AUTO_BED_LEVELING
 
   // The target position of the tool in absolute steps
@@ -678,9 +799,7 @@ block->steps_y = labs((target[X_AXIS]-position[X_AXIS]) - (target[Y_AXIS]-positi
       block->acceleration_st = axis_steps_per_sqr_second[Z_AXIS];
   }
   block->acceleration = block->acceleration_st / steps_per_mm;
-  extern float cpufreq;
-  block->acceleration_rate = (long)((float)block->acceleration_st *
-      (16777216.0 / ((cpufreq * 1000000) / 8.0)));
+  block->acceleration_rate = (long)((float)block->acceleration_st * (16777216.0 / (F_CPU / 8.0)));
 
 #if 0  // Use old jerk for now
   // Compute path unit vector
@@ -816,5 +935,65 @@ block->steps_y = labs((target[X_AXIS]-position[X_AXIS]) - (target[Y_AXIS]-positi
   st_wake_up();
 }
 
+#ifdef ENABLE_AUTO_BED_LEVELING
+vector_3 plan_get_position() {
+	vector_3 position = vector_3(st_get_position_mm(X_AXIS), st_get_position_mm(Y_AXIS), st_get_position_mm(Z_AXIS));
 
-/* vi: set et sw=2 sts=2: */
+	//position.debug("in plan_get position");
+	//plan_bed_level_matrix.debug("in plan_get bed_level");
+	matrix_3x3 inverse = matrix_3x3::transpose(plan_bed_level_matrix);
+	//inverse.debug("in plan_get inverse");
+	position.apply_rotation(inverse);
+	//position.debug("after rotation");
+
+	return position;
+}
+#endif // ENABLE_AUTO_BED_LEVELING
+
+#ifdef ENABLE_AUTO_BED_LEVELING
+void plan_set_position(float x, float y, float z, const float e)
+{
+  apply_rotation_xyz(plan_bed_level_matrix, x, y, z);
+#else
+void plan_set_position(const float &x, const float &y, const float &z, const float &e)
+{
+#endif // ENABLE_AUTO_BED_LEVELING
+
+  position[X_AXIS] = lround(x*axis_steps_per_unit[X_AXIS]);
+  position[Y_AXIS] = lround(y*axis_steps_per_unit[Y_AXIS]);
+  position[Z_AXIS] = lround(z*axis_steps_per_unit[Z_AXIS]);     
+  position[E_AXIS] = lround(e*axis_steps_per_unit[E_AXIS]);  
+  st_set_position(position[X_AXIS], position[Y_AXIS], position[Z_AXIS], position[E_AXIS]);
+  previous_nominal_speed = 0.0; // Resets planner junction speeds. Assumes start from rest.
+  previous_speed[0] = 0.0;
+  previous_speed[1] = 0.0;
+  previous_speed[2] = 0.0;
+  previous_speed[3] = 0.0;
+}
+
+void plan_set_e_position(const float e)
+{
+  position[E_AXIS] = lround(e*axis_steps_per_unit[E_AXIS]);  
+  st_set_e_position(position[E_AXIS]);
+}
+
+uint8_t movesplanned()
+{
+  return (block_buffer_head-block_buffer_tail + BLOCK_BUFFER_SIZE) & (BLOCK_BUFFER_SIZE - 1);
+}
+
+#ifdef PREVENT_DANGEROUS_EXTRUDE
+void set_extrude_min_temp(float temp)
+{
+  extrude_min_temp=temp;
+}
+#endif
+
+// Calculate the steps/s^2 acceleration rates, based on the mm/s^s
+void reset_acceleration_rates()
+{
+	for(int8_t i=0; i < NUM_AXIS; i++)
+        {
+        axis_steps_per_sqr_second[i] = max_acceleration_units_per_sq_second[i] * axis_steps_per_unit[i];
+        }
+}

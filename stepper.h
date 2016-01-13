@@ -29,6 +29,7 @@ void enable_endstops(bool check); // Enable/disable endstop checking
 // Block until all buffered steps are executed
 void st_synchronize();
 void st_wake_up();
+void st_init();
 
 #endif
 
