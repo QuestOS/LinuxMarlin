@@ -25,6 +25,7 @@
 #define planner_h
 
 #include "Marlin.h"
+#include "Configuration.h"
 
 #ifdef ENABLE_AUTO_BED_LEVELING
 #include "vector_3.h"
@@ -109,7 +110,7 @@ extern volatile unsigned char block_buffer_tail;
 void plan_buffer_line(float x, float y, float z, const float e, float feed_rate, const uint8_t extruder);
 
 // Get the position applying the bed level matrix if enabled
-vector_3 plan_get_position();
+//vector_3 plan_get_position();
 
 // Set position. Used for G92 instructions.
 void plan_set_position(float x, float y, float z, const float e);
@@ -123,9 +124,6 @@ FORCE_INLINE bool blocks_queued()
   else
     return true;
 }
-#endif // ENABLE_AUTO_BED_LEVELING
-
-
-#endif
+#endif 
 
 /* vi: set et sw=2 sts=2: */

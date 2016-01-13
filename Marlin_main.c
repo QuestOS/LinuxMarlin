@@ -7,6 +7,7 @@
 #include "Marlin.h"
 #include "Configuration.h"
 #include "Arduino.h"
+#include "planner.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/sysinfo.h>
@@ -17,9 +18,6 @@
 //===========================================================================
 //=============================public variables=============================
 //===========================================================================
-#ifdef SDSUPPORT
-CardReader card;
-#endif
 float homing_feedrate[] = HOMING_FEEDRATE;
 bool axis_relative_modes[] = AXIS_RELATIVE_MODES;
 int feedmultiply=100; //100->1 200->2
@@ -47,7 +45,7 @@ float extruder_offset[NUM_EXTRUDER_OFFSETS][EXTRUDERS] = {
 #endif
 };
 #endif
-uint8_t active_extruder = 0;
+char active_extruder = 0;
 int fanSpeed=0;
 #ifdef SERVO_ENDSTOPS
   int servo_endstops[] = SERVO_ENDSTOPS;
@@ -90,8 +88,8 @@ static long gcode_N, gcode_LastN, Stopped_gcode_LastN = 0;
 
 static bool relative_mode = false;  //Determines Absolute or Relative Coordinates
 
-static char cmdbuffer[BUFSIZE][MAX_CMD_SIZE];
-static bool fromsd[BUFSIZE];
+static char cmdbuffer[MAX_CMD_SIZE];
+//static bool fromsd[BUFSIZE];
 static int bufindr = 0;
 static int bufindw = 0;
 static int buflen = 0;
@@ -101,7 +99,7 @@ static int serial_count = 0;
 static bool comment_mode = false;
 static char *strchr_pointer; // just a pointer to find chars in the cmd string like X, Y, Z, E, etc
 
-const int sensitive_pins[] = SENSITIVE_PINS; // Sensitive pin list for M42
+//const int sensitive_pins[] = SENSITIVE_PINS; // Sensitive pin list for M42
 
 //static float tt = 0;
 //static float bt = 0;
@@ -160,6 +158,7 @@ static inline type array(int axis)			\
     { type temp[3] = { X_##CONFIG, Y_##CONFIG, Z_##CONFIG };\
       return temp[axis];}
 
+/*
 XYZ_DYN_FROM_CONFIG(float, base_home_pos,   HOME_POS);
 XYZ_DYN_FROM_CONFIG(float, max_length, MAX_LENGTH);
 XYZ_CONSTS_FROM_CONFIG(float, home_retract_mm, HOME_RETRACT_MM);
@@ -184,12 +183,10 @@ static void homeaxis(int axis) {
     st_synchronize();
     //TODO
 }
+*/
 
 /***********************************/
-int setup(char *);
-void loop();
 //int parse(char *line, line *l);
-void get_command();
 
 int main(int argc, char *argv[]) {
 
@@ -234,6 +231,9 @@ int setup(char *path)
     fprintf(stderr, "Failed to init timer\n");
     exit(-1);
   }
+
+  //init stepper
+  st_init();
 
   return file;
 }
@@ -298,9 +298,9 @@ void loop(int fd) {
 
     //check heater every n milliseconds
     //TODO
-    manage_heater();
-    manage_inactivity();
-    checkHitEndstops();
+    //manage_heater();
+    //manage_inactivity();
+    //checkHitEndstops();
   }
 }
 
@@ -315,7 +315,7 @@ bool get_command()
     {
       if(!serial_count) { //if empty line
         comment_mode = false; //for new command
-        return;
+        return false;
       }
       cmdbuffer[serial_count] = 0;  //terminate string
       if(!comment_mode){
@@ -368,7 +368,7 @@ bool get_command()
   return true;
 }
 
-#define HOMEAXIS(LETTER) homeaxis(LETTER##_AXIS)
+//#define HOMEAXIS(LETTER) homeaxis(LETTER##_AXIS)
 
 void process_commands()
 {

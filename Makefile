@@ -1,6 +1,6 @@
 
 CC=gcc
-CFLAGS=-I. -std=c99
+CFLAGS=-I. -std=c99 -lm
 DEPS = Marlin.h
 
 
@@ -8,12 +8,12 @@ DEPS = Marlin.h
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 
-all: Marlin_main.o
-	$(CC) -o marlin Marlin_main.o $(CFLAGS)
+all: Marlin_main.o Arduino.o planner.o stepper.o
+	$(CC) -o marlin Marlin_main.o Arduino.o planner.o stepper.o $(CFLAGS)
 
 fornow:
 	$(CC) -Wall -o marlin Marlin_main.c
 
 
 clean:
-	rm *.o marlin
+	rm -f *.o marlin

@@ -1,8 +1,6 @@
 #ifndef CONFIGURATION_H
 #define CONFIGURATION_H
 
-#include <stdbool.h>
-
 // This configuration file contains the basic settings.
 // Advanced settings can be found in Configuration_adv.h
 // BASIC SETTINGS: select your board type, temperature sensor type, axis scaling, and endstop configuration
@@ -230,9 +228,9 @@
 
 //this prevents dangerous Extruder moves, i.e. if the temperature is under the limit
 //can be software-disabled for whatever purposes by
-#define PREVENT_DANGEROUS_EXTRUDE
+//#define PREVENT_DANGEROUS_EXTRUDE
 //if PREVENT_DANGEROUS_EXTRUDE is on, you can still disable (uncomment) very long bits of extrusion separately.
-#define PREVENT_LENGTHY_EXTRUDE
+//#define PREVENT_LENGTHY_EXTRUDE
 
 #define EXTRUDE_MINTEMP 170
 #define EXTRUDE_MAXLENGTH (X_MAX_LENGTH+Y_MAX_LENGTH) //prevent extrusion of very large distances.
@@ -267,12 +265,12 @@
 #endif
 
 // The pullups are needed if you directly connect a mechanical endswitch between the signal and ground pins.
-const bool X_MIN_ENDSTOP_INVERTING = FALSE; // set to true to invert the logic of the endstop.
-const bool Y_MIN_ENDSTOP_INVERTING = FALSE; // set to true to invert the logic of the endstop.
-const bool Z_MIN_ENDSTOP_INVERTING = TRUE; // set to true to invert the logic of the endstop.
-const bool X_MAX_ENDSTOP_INVERTING = FALSE; // set to true to invert the logic of the endstop.
-const bool Y_MAX_ENDSTOP_INVERTING = FALSE; // set to true to invert the logic of the endstop.
-const bool Z_MAX_ENDSTOP_INVERTING = FALSE; // set to true to invert the logic of the endstop.
+static const bool X_MIN_ENDSTOP_INVERTING = false; // set to true to invert the logic of the endstop.
+static const bool Y_MIN_ENDSTOP_INVERTING = false; // set to true to invert the logic of the endstop.
+static const bool Z_MIN_ENDSTOP_INVERTING = true; // set to true to invert the logic of the endstop.
+static const bool X_MAX_ENDSTOP_INVERTING = false; // set to true to invert the logic of the endstop.
+static const bool Y_MAX_ENDSTOP_INVERTING = false; // set to true to invert the logic of the endstop.
+static const bool Z_MAX_ENDSTOP_INVERTING = false; // set to true to invert the logic of the endstop.
 //#define DISABLE_MAX_ENDSTOPS
 //#define DISABLE_MIN_ENDSTOPS
 
@@ -288,17 +286,17 @@ const bool Z_MAX_ENDSTOP_INVERTING = FALSE; // set to true to invert the logic o
 #define E_ENABLE_ON 0 // For all extruders
 
 // Disables axis when it's not being used.
-#define DISABLE_X FALSE
-#define DISABLE_Y FALSE
-#define DISABLE_Z TRUE
-#define DISABLE_E FALSE // For all extruders
+#define DISABLE_X false
+#define DISABLE_Y false
+#define DISABLE_Z true
+#define DISABLE_E false // For all extruders
 
-#define INVERT_X_DIR TRUE    // for Mendel set to false, for Orca set to true
-#define INVERT_Y_DIR TRUE    // for Mendel set to true, for Orca set to false
-#define INVERT_Z_DIR TRUE     // for Mendel set to false, for Orca set to true
-#define INVERT_E0_DIR FALSE   // for direct drive extruder v9 set to true, for geared extruder set to false
-#define INVERT_E1_DIR FALSE    // for direct drive extruder v9 set to true, for geared extruder set to false
-#define INVERT_E2_DIR FALSE   // for direct drive extruder v9 set to true, for geared extruder set to false
+#define INVERT_X_DIR true    // for Mendel set to false, for Orca set to true
+#define INVERT_Y_DIR true    // for Mendel set to true, for Orca set to false
+#define INVERT_Z_DIR true     // for Mendel set to false, for Orca set to true
+#define INVERT_E0_DIR false   // for direct drive extruder v9 set to true, for geared extruder set to false
+#define INVERT_E1_DIR false    // for direct drive extruder v9 set to true, for geared extruder set to false
+#define INVERT_E2_DIR false   // for direct drive extruder v9 set to true, for geared extruder set to false
 
 // ENDSTOP SETTINGS:
 // Sets direction of endstops when homing; 1=MAX, -1=MIN
@@ -306,8 +304,8 @@ const bool Z_MAX_ENDSTOP_INVERTING = FALSE; // set to true to invert the logic o
 #define Y_HOME_DIR 1
 #define Z_HOME_DIR -1
 
-#define min_software_endstops TRUE // If true, axis won't move to coordinates less than HOME_POS.
-#define max_software_endstops TRUE  // If true, axis won't move to coordinates greater than the defined lengths below.
+#define min_software_endstops true // If true, axis won't move to coordinates less than HOME_POS.
+#define max_software_endstops true  // If true, axis won't move to coordinates greater than the defined lengths below.
 
 // Travel limits after homing
 #define X_MAX_POS_DEFAULT 205
@@ -322,7 +320,7 @@ const bool Z_MAX_ENDSTOP_INVERTING = FALSE; // set to true to invert the logic o
 #define Z_MAX_LENGTH (base_max_pos[2] - base_min_pos[2])
 //============================= Bed Auto Leveling ===========================
 
-#define ENABLE_AUTO_BED_LEVELING // Delete the comment to enable (remove // at the start of the line)
+//#define ENABLE_AUTO_BED_LEVELING // Delete the comment to enable (remove // at the start of the line)
 
 #ifdef ENABLE_AUTO_BED_LEVELING
 

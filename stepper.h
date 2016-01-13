@@ -25,9 +25,10 @@
 
 // Set current position in steps
 void st_set_position(const long x, const long y, const long z, const long e);
-void enable_endstops(BOOL check); // Enable/disable endstop checking
+void enable_endstops(bool check); // Enable/disable endstop checking
 // Block until all buffered steps are executed
 void st_synchronize();
+void st_wake_up();
 
 #endif
 

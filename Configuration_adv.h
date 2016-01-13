@@ -91,48 +91,48 @@
 
 //// AUTOSET LOCATIONS OF LIMIT SWITCHES
 //// Added by ZetaPhoenix 09-15-2012
-#ifdef MANUAL_HOME_POSITIONS  // Use manual limit switch locations
-  #define X_HOME_POS MANUAL_X_HOME_POS
-  #define Y_HOME_POS MANUAL_Y_HOME_POS
-  #define Z_HOME_POS MANUAL_Z_HOME_POS
-#else //Set min/max homing switch positions based upon homing direction and min/max travel limits
-  //X axis
-  #if X_HOME_DIR == -1
-    #ifdef BED_CENTER_AT_0_0
-      #define X_HOME_POS X_MAX_LENGTH * -0.5
-    #else
-      #define X_HOME_POS base_min_pos[0]
-    #endif //BED_CENTER_AT_0_0
-  #else    
-    #ifdef BED_CENTER_AT_0_0
-      #define X_HOME_POS X_MAX_LENGTH * 0.5
-    #else
-      #define X_HOME_POS base_max_pos[0]
-    #endif //BED_CENTER_AT_0_0
-  #endif //X_HOME_DIR == -1
-  
-  //Y axis
-  #if Y_HOME_DIR == -1
-    #ifdef BED_CENTER_AT_0_0
-      #define Y_HOME_POS Y_MAX_LENGTH * -0.5
-    #else
-      #define Y_HOME_POS base_min_pos[1]
-    #endif //BED_CENTER_AT_0_0
-  #else    
-    #ifdef BED_CENTER_AT_0_0
-      #define Y_HOME_POS Y_MAX_LENGTH * 0.5
-    #else
-      #define Y_HOME_POS base_max_pos[1]
-    #endif //BED_CENTER_AT_0_0
-  #endif //Y_HOME_DIR == -1
-  
-  // Z axis
-  #if Z_HOME_DIR == -1 //BED_CENTER_AT_0_0 not used
-    #define Z_HOME_POS base_min_pos[2]
-  #else    
-    #define Z_HOME_POS base_max_pos[2]
-  #endif //Z_HOME_DIR == -1
-#endif //End auto min/max positions
+//#ifdef MANUAL_HOME_POSITIONS  // Use manual limit switch locations
+//  #define X_HOME_POS MANUAL_X_HOME_POS
+//  #define Y_HOME_POS MANUAL_Y_HOME_POS
+//  #define Z_HOME_POS MANUAL_Z_HOME_POS
+//#else //Set min/max homing switch positions based upon homing direction and min/max travel limits
+//  //X axis
+//  #if X_HOME_DIR == -1
+//    #ifdef BED_CENTER_AT_0_0
+//      #define X_HOME_POS X_MAX_LENGTH * -0.5
+//    #else
+//      #define X_HOME_POS base_min_pos[0]
+//    #endif //BED_CENTER_AT_0_0
+//  #else    
+//    #ifdef BED_CENTER_AT_0_0
+//      #define X_HOME_POS X_MAX_LENGTH * 0.5
+//    #else
+//      #define X_HOME_POS base_max_pos[0]
+//    #endif //BED_CENTER_AT_0_0
+//  #endif //X_HOME_DIR == -1
+//  
+//  //Y axis
+//  #if Y_HOME_DIR == -1
+//    #ifdef BED_CENTER_AT_0_0
+//      #define Y_HOME_POS Y_MAX_LENGTH * -0.5
+//    #else
+//      #define Y_HOME_POS base_min_pos[1]
+//    #endif //BED_CENTER_AT_0_0
+//  #else    
+//    #ifdef BED_CENTER_AT_0_0
+//      #define Y_HOME_POS Y_MAX_LENGTH * 0.5
+//    #else
+//      #define Y_HOME_POS base_max_pos[1]
+//    #endif //BED_CENTER_AT_0_0
+//  #endif //Y_HOME_DIR == -1
+//  
+//  // Z axis
+//  #if Z_HOME_DIR == -1 //BED_CENTER_AT_0_0 not used
+//    #define Z_HOME_POS base_min_pos[2]
+//  #else    
+//    #define Z_HOME_POS base_max_pos[2]
+//  #endif //Z_HOME_DIR == -1
+//#endif //End auto min/max positions
 //END AUTOSET LOCATIONS OF LIMIT SWITCHES -ZP
 
 
@@ -154,7 +154,7 @@
 //#define Y_DUAL_STEPPER_DRIVERS
 
 // Define if the two Y drives need to rotate in opposite directions
-#define INVERT_Y2_VS_Y_DIR TRUE
+#define INVERT_Y2_VS_Y_DIR true
 
 #ifdef Y_DUAL_STEPPER_DRIVERS
   #undef EXTRUDERS
@@ -218,15 +218,15 @@
 #define Z_HOME_RETRACT_MM 1 
 //#define QUICK_HOME  //if this is defined, if both x and y are to be homed, a diagonal move will be performed initially.
 
-#define AXIS_RELATIVE_MODES {FALSE, FALSE, FALSE, FALSE}
+#define AXIS_RELATIVE_MODES {false, false, false, false}
 
 #define MAX_STEP_FREQUENCY 40000 // Max step frequency for Ultimaker (5000 pps / half step)
 
 //By default pololu step drivers require an active high signal. However, some high power drivers require an active low signal as step.
-#define INVERT_X_STEP_PIN FALSE
-#define INVERT_Y_STEP_PIN FALSE
-#define INVERT_Z_STEP_PIN FALSE
-#define INVERT_E_STEP_PIN FALSE
+#define INVERT_X_STEP_PIN false
+#define INVERT_Y_STEP_PIN false
+#define INVERT_Z_STEP_PIN false
+#define INVERT_E_STEP_PIN false
 
 //default stepper release if idle
 #define DEFAULT_STEPPER_DEACTIVE_TIME 60
@@ -273,7 +273,7 @@
 //=============================Additional Features===========================
 //===========================================================================
 
-#define SD_FINISHED_STEPPERRELEASE TRUE  //if sd support and the file is finished: disable steppers?
+#define SD_FINISHED_STEPPERRELEASE true  //if sd support and the file is finished: disable steppers?
 #define SD_FINISHED_RELEASECOMMAND "M84 X Y Z E" // You might want to keep the z enabled so your bed stays in place.
 
 #define SDCARD_RATHERRECENTFIRST  //reverse file order of sd card menu display. Its sorted practically after the filesystem block order. 
@@ -300,7 +300,7 @@
 //#define BABYSTEPPING
 #ifdef BABYSTEPPING
   #define BABYSTEP_XY  //not only z, but also XY in the menu. more clutter, more functions
-  #define BABYSTEP_INVERT_Z FALSE  //true for inverse movements in Z
+  #define BABYSTEP_INVERT_Z false  //true for inverse movements in Z
   #define BABYSTEP_Z_MULTIPLICATOR 2 //faster z movements
   
   #ifdef COREXY
@@ -337,7 +337,7 @@
 #define MM_PER_ARC_SEGMENT 1
 #define N_ARC_CORRECTION 25
 
-const unsigned int dropsegments=5; //everything with less than this number of steps will be ignored as move and joined with the next movement
+static const unsigned int dropsegments=6; //everything with less than this number of steps will be ignored as move and joined with the next movement
 
 // If you are using a RAMPS board or cheap E-bay purchased boards that do not detect when an SD card is inserted
 // You can get round this by connecting a push button or single throw switch to the pin defined as SDCARDCARDDETECT 
@@ -382,7 +382,6 @@ const unsigned int dropsegments=5; //everything with less than this number of st
 
 
 #define MAX_CMD_SIZE 96
-
 
 // Firmware based and LCD controled retract
 // M207 and M208 can be used to define parameters for the retraction. 
