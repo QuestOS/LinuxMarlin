@@ -320,7 +320,7 @@ static const bool Z_MAX_ENDSTOP_INVERTING = false; // set to true to invert the 
 #define Z_MAX_LENGTH (base_max_pos[2] - base_min_pos[2])
 //============================= Bed Auto Leveling ===========================
 
-//#define ENABLE_AUTO_BED_LEVELING // Delete the comment to enable (remove // at the start of the line)
+#define ENABLE_AUTO_BED_LEVELING // Delete the comment to enable (remove // at the start of the line)
 
 #ifdef ENABLE_AUTO_BED_LEVELING
 

@@ -55,7 +55,7 @@
 #include "planner.h"
 #include "stepper.h"
 #include "temperature.h"
-#include "language.h"
+//#include "language.h"
 
 //===========================================================================
 //=============================public variables ============================
@@ -415,7 +415,7 @@ void getHighESpeed()
     if((block_buffer[block_index].steps_x != 0) ||
       (block_buffer[block_index].steps_y != 0) ||
       (block_buffer[block_index].steps_z != 0)) {
-      float se=(float(block_buffer[block_index].steps_e)/float(block_buffer[block_index].step_event_count))*block_buffer[block_index].nominal_speed;
+      float se=((float)(block_buffer[block_index].steps_e)/(float)(block_buffer[block_index].step_event_count))*block_buffer[block_index].nominal_speed;
       //se; mm/sec;
       if(se>high)
       {
@@ -536,11 +536,11 @@ void plan_buffer_line(const float &x, const float &y, const float &z, const floa
   {
     manage_heater(); 
     manage_inactivity(); 
-    lcd_update();
+    //lcd_update();
   }
 
 #ifdef ENABLE_AUTO_BED_LEVELING
-  apply_rotation_xyz(plan_bed_level_matrix, x, y, z);
+  apply_rotation_xyz(plan_bed_level_matrix, &x, &y, &z);
 #endif // ENABLE_AUTO_BED_LEVELING
 
   // The target position of the tool in absolute steps
@@ -799,7 +799,8 @@ block->steps_y = labs((target[X_AXIS]-position[X_AXIS]) - (target[Y_AXIS]-positi
       block->acceleration_st = axis_steps_per_sqr_second[Z_AXIS];
   }
   block->acceleration = block->acceleration_st / steps_per_mm;
-  block->acceleration_rate = (long)((float)block->acceleration_st * (16777216.0 / (F_CPU / 8.0)));
+  extern float cpufreq;
+  block->acceleration_rate = (long)((float)block->acceleration_st * (16777216.0 / (cpufreq * 1000000 / 8.0)));
 
 #if 0  // Use old jerk for now
   // Compute path unit vector
@@ -953,7 +954,7 @@ vector_3 plan_get_position() {
 #ifdef ENABLE_AUTO_BED_LEVELING
 void plan_set_position(float x, float y, float z, const float e)
 {
-  apply_rotation_xyz(plan_bed_level_matrix, x, y, z);
+  apply_rotation_xyz(plan_bed_level_matrix, &x, &y, &z);
 #else
 void plan_set_position(const float &x, const float &y, const float &z, const float &e)
 {

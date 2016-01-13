@@ -118,6 +118,7 @@ unsigned char SREG;
 
 extern int extrudemultiply;
 extern int fanSpeed;
+extern char active_extruder;
 
 #define max(a,b) \
    ({ __typeof__ (a) _a = (a); \
