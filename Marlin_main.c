@@ -510,6 +510,7 @@ void manage_inactivity()
       }
     }
   }
+  check_axes_activity();
 }
 
 
