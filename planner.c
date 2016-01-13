@@ -999,3 +999,4 @@ void reset_acceleration_rates()
         }
 }
 
+/* vi: set et sw=2 sts=2: */

@@ -952,3 +952,4 @@ const short temptable_60[][2] PROGMEM = {
 
 #endif //THERMISTORTABLES_H_
 
+/* vi: set et sw=2 sts=2: */
