@@ -173,9 +173,8 @@ bool code_seen(char code)
 
 void kill()
 {
-  cli();
+  exit(1);
   //TODO
-  //disable_heater();
 }
 
 #define XYZ_CONSTS_FROM_CONFIG(type, array, CONFIG) \
@@ -200,21 +199,80 @@ static void homeaxis(int axis) {
   ((LETTER##_MIN_PIN > -1 && LETTER##_HOME_DIR==-1) || (LETTER##_MAX_PIN > -1 && LETTER##_HOME_DIR==1))
 
   if (axis==X_AXIS ? HOMEAXIS_DO(X) :
-    axis==Y_AXIS ? HOMEAXIS_DO(Y) :
-    axis==Z_AXIS ? HOMEAXIS_DO(Z) :
-    0) {
+      axis==Y_AXIS ? HOMEAXIS_DO(Y) :
+      axis==Z_AXIS ? HOMEAXIS_DO(Z) :
+      0) {
     int axis_home_dir = home_dir(axis);
+#ifdef DUAL_X_CARRIAGE
+    if (axis == X_AXIS)
+      axis_home_dir = x_home_dir(active_extruder);
+#endif
 
     current_position[axis] = 0;
     plan_set_position(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS]);
+	
+
+    // Engage Servo endstop if enabled
+    #ifdef SERVO_ENDSTOPS
+      #if defined (ENABLE_AUTO_BED_LEVELING) && (PROBE_SERVO_DEACTIVATION_DELAY > 0)
+        if (axis==Z_AXIS) {
+          engage_z_probe();
+        }
+	    else
+      #endif
+      if (servo_endstops[axis] > -1) {
+        servos[servo_endstops[axis]].write(servo_endstop_angles[axis * 2]);
+      }
+    #endif
 
     destination[axis] = 1.5 * max_length(axis) * axis_home_dir;
     feedrate = homing_feedrate[axis];
     plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate/60, active_extruder);
     st_synchronize();
-    //TODO
+
+    current_position[axis] = 0;
+    plan_set_position(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS]);
+    destination[axis] = -home_retract_mm(axis) * axis_home_dir;
+    plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate/60, active_extruder);
+    st_synchronize();
+
+    destination[axis] = 2*home_retract_mm(axis) * axis_home_dir;
+#ifdef DELTA
+    feedrate = homing_feedrate[axis]/10;
+#else
+    feedrate = homing_feedrate[axis]/2 ;
+#endif
+    plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate/60, active_extruder);
+    st_synchronize();
+#ifdef DELTA
+    // retrace by the amount specified in endstop_adj
+    if (endstop_adj[axis] * axis_home_dir < 0) {
+      plan_set_position(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS]);
+      destination[axis] = endstop_adj[axis];
+      plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate/60, active_extruder);
+      st_synchronize();
+    }
+#endif
+    axis_is_at_home(axis);
+    destination[axis] = current_position[axis];
+    feedrate = 0.0;
+    endstops_hit_on_purpose();
+    axis_known_position[axis] = true;
+
+    // Retract Servo endstop if enabled
+    #ifdef SERVO_ENDSTOPS
+      if (servo_endstops[axis] > -1) {
+        servos[servo_endstops[axis]].write(servo_endstop_angles[axis * 2 + 1]);
+      }
+    #endif
+#if defined (ENABLE_AUTO_BED_LEVELING) && (PROBE_SERVO_DEACTIVATION_DELAY > 0)
+    if (axis==Z_AXIS) retract_z_probe();
+#endif
+    
+  }
 }
 */
+#define HOMEAXIS(LETTER) homeaxis(LETTER##_AXIS)
 
 /***********************************/
 //int parse(char *line, line *l);
@@ -452,7 +510,7 @@ void process_commands()
 void get_coordinates()
 {
   bool seen[4]={false,false,false,false};
-  for(char i=0; i < NUM_AXIS; i++) {
+  for(int8_t i=0; i < NUM_AXIS; i++) {
     if(code_seen(axis_codes[i]))
     {
       destination[i] = (float)code_value() + (axis_relative_modes[i] || relative_mode)*current_position[i];
@@ -464,6 +522,42 @@ void get_coordinates()
     next_feedrate = code_value();
     if(next_feedrate > 0.0) feedrate = next_feedrate;
   }
+  #ifdef FWRETRACT
+  if(autoretract_enabled)
+  if( !(seen[X_AXIS] || seen[Y_AXIS] || seen[Z_AXIS]) && seen[E_AXIS])
+  {
+    float echange=destination[E_AXIS]-current_position[E_AXIS];
+    if(echange<-MIN_RETRACT) //retract
+    {
+      if(!retracted)
+      {
+
+      destination[Z_AXIS]+=retract_zlift; //not sure why chaninging current_position negatively does not work.
+      //if slicer retracted by echange=-1mm and you want to retract 3mm, corrrectede=-2mm additionally
+      float correctede=-echange-retract_length;
+      //to generate the additional steps, not the destination is changed, but inversely the current position
+      current_position[E_AXIS]+=-correctede;
+      feedrate=retract_feedrate;
+      retracted=true;
+      }
+
+    }
+    else
+      if(echange>MIN_RETRACT) //retract_recover
+    {
+      if(retracted)
+      {
+      //current_position[Z_AXIS]+=-retract_zlift;
+      //if slicer retracted_recovered by echange=+1mm and you want to retract_recover 3mm, corrrectede=2mm additionally
+      float correctede=-echange+1*retract_length+retract_recover_length; //total unretract=retract_length+retract_recover_length[surplus]
+      current_position[E_AXIS]+=correctede; //to generate the additional steps, not the destination is changed, but inversely the current position
+      feedrate=retract_recover_feedrate;
+      retracted=false;
+      }
+    }
+
+  }
+  #endif //FWRETRACT
 }
 
 void clamp_to_software_endstops(float target[3])
@@ -485,18 +579,84 @@ void prepare_move()
 {
   clamp_to_software_endstops(destination);
 
-
   previous_millis_cmd = millis();
+#ifdef DELTA
+  float difference[NUM_AXIS];
+  for (int8_t i=0; i < NUM_AXIS; i++) {
+    difference[i] = destination[i] - current_position[i];
+  }
+  float cartesian_mm = sqrt(sq(difference[X_AXIS]) +
+                            sq(difference[Y_AXIS]) +
+                            sq(difference[Z_AXIS]));
+  if (cartesian_mm < 0.000001) { cartesian_mm = abs(difference[E_AXIS]); }
+  if (cartesian_mm < 0.000001) { return; }
+  float seconds = 6000 * cartesian_mm / feedrate / feedmultiply;
+  int steps = max(1, int(DELTA_SEGMENTS_PER_SECOND * seconds));
+  // SERIAL_ECHOPGM("mm="); SERIAL_ECHO(cartesian_mm);
+  // SERIAL_ECHOPGM(" seconds="); SERIAL_ECHO(seconds);
+  // SERIAL_ECHOPGM(" steps="); SERIAL_ECHOLN(steps);
+  for (int s = 1; s <= steps; s++) {
+    float fraction = float(s) / float(steps);
+    for(int8_t i=0; i < NUM_AXIS; i++) {
+      destination[i] = current_position[i] + difference[i] * fraction;
+    }
+    calculate_delta(destination);
+    plan_buffer_line(delta[X_AXIS], delta[Y_AXIS], delta[Z_AXIS],
+                     destination[E_AXIS], feedrate*feedmultiply/60/100.0,
+                     active_extruder);
+  }
+#else
+
+#ifdef DUAL_X_CARRIAGE
+  if (active_extruder_parked)
+  {
+    if (dual_x_carriage_mode == DXC_DUPLICATION_MODE && active_extruder == 0)
+    {
+      // move duplicate extruder into correct duplication position.
+      plan_set_position(inactive_extruder_x_pos, current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS]);
+      plan_buffer_line(current_position[X_AXIS] + duplicate_extruder_x_offset, current_position[Y_AXIS], current_position[Z_AXIS], 
+          current_position[E_AXIS], max_feedrate[X_AXIS], 1);
+      plan_set_position(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS]);
+      st_synchronize();
+      extruder_duplication_enabled = true;
+      active_extruder_parked = false;
+    }  
+    else if (dual_x_carriage_mode == DXC_AUTO_PARK_MODE) // handle unparking of head
+    {
+      if (current_position[E_AXIS] == destination[E_AXIS])
+      {
+        // this is a travel move - skit it but keep track of current position (so that it can later
+        // be used as start of first non-travel move)
+        if (delayed_move_time != 0xFFFFFFFFUL)
+        {
+          memcpy(current_position, destination, sizeof(current_position)); 
+          if (destination[Z_AXIS] > raised_parked_position[Z_AXIS])
+            raised_parked_position[Z_AXIS] = destination[Z_AXIS];
+          delayed_move_time = millis();
+          return;
+        }
+      }
+      delayed_move_time = 0;
+      // unpark extruder: 1) raise, 2) move into starting XY position, 3) lower
+      plan_buffer_line(raised_parked_position[X_AXIS], raised_parked_position[Y_AXIS], raised_parked_position[Z_AXIS],    current_position[E_AXIS], max_feedrate[Z_AXIS], active_extruder);
+      plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], raised_parked_position[Z_AXIS], 
+          current_position[E_AXIS], min(max_feedrate[X_AXIS],max_feedrate[Y_AXIS]), active_extruder);
+      plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], 
+          current_position[E_AXIS], max_feedrate[Z_AXIS], active_extruder);
+      active_extruder_parked = false;
+    }
+  }
+#endif //DUAL_X_CARRIAGE
 
   // Do not use feedmultiply for E or Z only moves
   if( (current_position[X_AXIS] == destination [X_AXIS]) && (current_position[Y_AXIS] == destination [Y_AXIS])) {
-    plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate/60, active_extruder);
+      plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate/60, active_extruder);
   }
   else {
     plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate*feedmultiply/60/100.0, active_extruder);
   }
-
-  for(char i=0; i < NUM_AXIS; i++) {
+#endif //else DELTA
+  for(int8_t i=0; i < NUM_AXIS; i++) {
     current_position[i] = destination[i];
   }
 }
