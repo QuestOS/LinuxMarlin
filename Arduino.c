@@ -100,3 +100,13 @@ void digitalWrite(int pin, int val)
 {
   //TODO
 }
+
+int analogRead(int pin)
+{
+  //TODO
+  return 0;
+}
+void analogWrite(int pin, int val)
+{
+  //TODO
+}

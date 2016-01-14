@@ -11,4 +11,7 @@ int timeInit();
 int digitalRead(int pin);
 void digitalWrite(int pin, int val);
 
+int analogRead(int pin);
+void analogWrite(int pin, int val);
+
 #endif

@@ -24,6 +24,9 @@
 #include "Configuration.h"
 #include "pins.h"
 
+//TODO
+#define F_CPU 16000000
+
 #define SERIAL_PROTOCOL(x) printf("%s\n", x)
 #define SERIAL_PROTOCOL_F(x,y) printf("%f\n", x)
 #define SERIAL_PROTOCOLPGM(x) printf("%s\n", x)
@@ -38,6 +41,13 @@
 #else
 #define DEBUG_PRINT(...) do{ } while ( false )
 #endif
+#define SERIAL_ECHO_START 
+#define SERIAL_ECHO(x) SERIAL_PROTOCOL(x)
+#define SERIAL_ECHOPGM(x) SERIAL_PROTOCOLPGM(x)
+#define SERIAL_ECHOLN(x) SERIAL_PROTOCOLLN(x)
+#define SERIAL_ECHOLNPGM(x) SERIAL_PROTOCOLLNPGM(x)
+
+#define SERIAL_ECHOPAIR(name,value) SERIAL_PROTOCOL(name)
 
 enum AxisEnum {X_AXIS=0, Y_AXIS=1, Z_AXIS=2, E_AXIS=3};
 
