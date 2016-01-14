@@ -12,10 +12,12 @@
   utility functions
 */
 
-
+//TODO
 #define WRITE(IO, v) 
+#define READ(IO) 0
 
-
+#define SET_INPUT(IO) 
+#define SET_OUTPUT(IO) 
 
 
 

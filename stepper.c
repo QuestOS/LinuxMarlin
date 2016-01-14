@@ -25,6 +25,7 @@
 #include "stepper.h"
 #include "planner.h"
 #include "temperature.h"
+#include "language.h"
 #include "speed_lookuptable.h"
 //#include "DAC.h"
 #if defined(DIGIPOTSS_PIN) && DIGIPOTSS_PIN > -1
@@ -124,8 +125,9 @@ asm volatile ( \
 // uses:
 // r26 to store 0
 // r27 to store the byte 1 of the 48bit result
+// TODO
 #define MultiU24X24toH16(intRes, longIn1, longIn2) \
-asm volatile ( \
+/*asm volatile ( \
 "clr r26 \n\t" \
 "mul %A1, %B2 \n\t" \
 "mov r27, r1 \n\t" \
@@ -163,7 +165,7 @@ asm volatile ( \
 "d" (longIn2) \
 : \
 "r26" , "r27" \
-)
+)*/
 
 // Some useful constants
 
@@ -298,7 +300,9 @@ FORCE_INLINE void trapezoid_generator_reset() {
   step_loops_nominal = step_loops;
   acc_step_rate = current_block->initial_rate;
   acceleration_time = calc_timer(acc_step_rate);
+  /* TODO
   OCR1A = acceleration_time;
+  */
 
 //    SERIAL_ECHO_START;
 //    SERIAL_ECHOPGM("advance :");
@@ -314,6 +318,8 @@ FORCE_INLINE void trapezoid_generator_reset() {
 
 // "The Stepper Driver Interrupt" - This timer interrupt is the workhorse.
 // It pops blocks from the block_buffer and executes them by pulsing the stepper pins appropriately.
+// TODO
+#if 0
 ISR(TIMER1_COMPA_vect)
 {
   // If there is no current block, attempt to pop one from the buffer
@@ -332,7 +338,10 @@ ISR(TIMER1_COMPA_vect)
       #ifdef Z_LATE_ENABLE
         if(current_block->steps_z > 0) {
           enable_z();
+          //TODO
+          /*
           OCR1A = 2000; //1ms wait
+          */
           return;
         }
       #endif
@@ -342,7 +351,10 @@ ISR(TIMER1_COMPA_vect)
 //      #endif
     }
     else {
+        //TODO
+        /*
         OCR1A=2000; // 1kHz.
+        */
     }
   }
 
@@ -654,7 +666,9 @@ ISR(TIMER1_COMPA_vect)
 
       // step_rate to timer interval
       timer = calc_timer(acc_step_rate);
+      /* TODO
       OCR1A = timer;
+      */
       acceleration_time += timer;
       #ifdef ADVANCE
         for(int8_t i=0; i < step_loops; i++) {
@@ -683,7 +697,9 @@ ISR(TIMER1_COMPA_vect)
 
       // step_rate to timer interval
       timer = calc_timer(step_rate);
+      /* TODO
       OCR1A = timer;
+      */
       deceleration_time += timer;
       #ifdef ADVANCE
         for(int8_t i=0; i < step_loops; i++) {
@@ -708,11 +724,14 @@ ISR(TIMER1_COMPA_vect)
     }
   }
 }
+#endif
 
 #ifdef ADVANCE
   unsigned char old_OCR0A;
   // Timer interrupt for E. e_steps is set in the main routine;
   // Timer 0 is shared with millies
+  //TODO
+#if 0
   ISR(TIMER0_COMPA_vect)
   {
     old_OCR0A += 52; // ~10kHz interrupt (250000 / 26 = 9615kHz)
@@ -764,6 +783,7 @@ ISR(TIMER1_COMPA_vect)
  #endif
     }
   }
+#endif
 #endif // ADVANCE
 
 void st_init()
