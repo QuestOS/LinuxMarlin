@@ -25,10 +25,8 @@
 #include "stepper.h"
 #include "planner.h"
 #include "temperature.h"
-#include "ultralcd.h"
-#include "language.h"
 #include "speed_lookuptable.h"
-#include "DAC.h"
+//#include "DAC.h"
 #if defined(DIGIPOTSS_PIN) && DIGIPOTSS_PIN > -1
 #include <SPI.h>
 #endif
@@ -91,6 +89,9 @@ volatile signed char count_direction[NUM_AXIS] = { 1, 1, 1, 1};
 //===========================================================================
 //=============================functions         ============================
 //===========================================================================
+
+#undef FORCE_INLINE
+#define FORCE_INLINE static __attribute__((always_inline)) inline
 
 #define CHECK_ENDSTOPS  if(check_endstops)
 
@@ -166,8 +167,9 @@ asm volatile ( \
 
 // Some useful constants
 
-#define ENABLE_STEPPER_DRIVER_INTERRUPT()  TIMSK1 |= (1<<OCIE1A)
-#define DISABLE_STEPPER_DRIVER_INTERRUPT() TIMSK1 &= ~(1<<OCIE1A)
+//TODO
+#define ENABLE_STEPPER_DRIVER_INTERRUPT()  //TIMSK1 |= (1<<OCIE1A)
+#define DISABLE_STEPPER_DRIVER_INTERRUPT() //TIMSK1 &= ~(1<<OCIE1A)
 
 
 void checkHitEndstops()
@@ -930,7 +932,8 @@ void st_init()
     WRITE(E2_STEP_PIN,INVERT_E_STEP_PIN);
     disable_e2();
   #endif
-
+/*
+  TODO
   // waveform generation = 0100 = CTC
   TCCR1B &= ~(1<<WGM13);
   TCCR1B |=  (1<<WGM12);
@@ -950,6 +953,7 @@ void st_init()
 
   OCR1A = 0x4000;
   TCNT1 = 0;
+*/
   ENABLE_STEPPER_DRIVER_INTERRUPT();
 
   #ifdef ADVANCE
@@ -974,11 +978,10 @@ void st_synchronize()
     while( blocks_queued()) {
     manage_heater();
     manage_inactivity();
-    lcd_update();
   }
 }
 
-void st_set_position(const long &x, const long &y, const long &z, const long &e)
+void st_set_position(const long x, const long y, const long z, const long e)
 {
   CRITICAL_SECTION_START;
   count_position[X_AXIS] = x;
@@ -988,7 +991,7 @@ void st_set_position(const long &x, const long &y, const long &z, const long &e)
   CRITICAL_SECTION_END;
 }
 
-void st_set_e_position(const long &e)
+void st_set_e_position(const long e)
 {
   CRITICAL_SECTION_START;
   count_position[E_AXIS] = e;
@@ -1227,26 +1230,30 @@ void digipot_current(uint8_t driver, int current)
 }
 
 #ifdef DAC_STEPPER_CURRENT
+/*
 bool dac_present = false;
 const uint8_t dac_order[NUM_AXIS] = DAC_STEPPER_ORDER;
 
-mcp4728 stepper_current_dac(DAC_STEPPER_ADDRESS);
+DAC stepper_current_dac = {
+  ._deviceID = DAC_STEPPER_ADDRESS,
+  ._dev_address = (BASE_ADDR | DAC_STEPPER_ADDRESS);
+  ._vdd = defaultVDD;
+};
 
 int dac_init()
 {
 	int i;
-	stepper_current_dac.begin();
+	DAC_begin(&stepper_current_dac);
 
-	if(stepper_current_dac.reset() != 0)
+	if(DAC_reset(&stepper_current_dac) != 0)
 		return -1;
 
 	dac_present = true;
 
 	for(i=0;i<NUM_AXIS;i++) {
-		stepper_current_dac.setVref(i, DAC_STEPPER_VREF);
-		stepper_current_dac.setGain(i, DAC_STEPPER_GAIN);
+		DAC_setVref(&stepper_current_dac, i, DAC_STEPPER_VREF);
+		DAC_setGain(&stepper_current_dac, i, DAC_STEPPER_GAIN);
 	}
-
 	return 0;
 }
 
@@ -1305,6 +1312,7 @@ void dac_commit_eeprom()
 
 	stepper_current_dac.eepromWrite();
 }
+*/
 #endif
 
 void microstep_init()

@@ -942,9 +942,9 @@ vector_3* plan_get_position() {
 
 	//position.debug("in plan_get position");
 	//plan_bed_level_matrix.debug("in plan_get bed_level");
-	matrix_3x3 inverse = matrix_3x3::transpose(plan_bed_level_matrix);
+	matrix_3x3 inverse = matrix_3x3_transpose(plan_bed_level_matrix);
 	//inverse.debug("in plan_get inverse");
-	position.apply_rotation(inverse);
+	vector_3_apply_rotation(position, inverse);
 	//position.debug("after rotation");
 
 	return position;
