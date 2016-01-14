@@ -27,6 +27,7 @@
 #include "temperature.h"
 #include "language.h"
 #include "speed_lookuptable.h"
+#include "avr.h"
 //#include "DAC.h"
 #if defined(DIGIPOTSS_PIN) && DIGIPOTSS_PIN > -1
 #include <SPI.h>
@@ -101,7 +102,7 @@ volatile signed char count_direction[NUM_AXIS] = { 1, 1, 1, 1};
 // r26 to store 0
 // r27 to store the byte 1 of the 24 bit result
 #define MultiU16X8toH16(intRes, charIn1, intIn2) \
-asm volatile ( \
+/*asm volatile ( \
 "clr r26 \n\t" \
 "mul %A1, %B2 \n\t" \
 "movw %A0, r0 \n\t" \
@@ -119,7 +120,7 @@ asm volatile ( \
 "d" (intIn2) \
 : \
 "r26" \
-)
+)*/
 
 // intRes = longIn1 * longIn2 >> 24
 // uses:
@@ -181,15 +182,12 @@ void checkHitEndstops()
    SERIAL_ECHOPGM(MSG_ENDSTOPS_HIT);
    if(endstop_x_hit) {
      SERIAL_ECHOPAIR(" X:",(float)endstops_trigsteps[X_AXIS]/axis_steps_per_unit[X_AXIS]);
-     LCD_MESSAGEPGM(MSG_ENDSTOPS_HIT "X");
    }
    if(endstop_y_hit) {
      SERIAL_ECHOPAIR(" Y:",(float)endstops_trigsteps[Y_AXIS]/axis_steps_per_unit[Y_AXIS]);
-     LCD_MESSAGEPGM(MSG_ENDSTOPS_HIT "Y");
    }
    if(endstop_z_hit) {
      SERIAL_ECHOPAIR(" Z:",(float)endstops_trigsteps[Z_AXIS]/axis_steps_per_unit[Z_AXIS]);
-     LCD_MESSAGEPGM(MSG_ENDSTOPS_HIT "Z");
    }
    SERIAL_ECHOLN("");
    endstop_x_hit=false;
@@ -279,7 +277,7 @@ FORCE_INLINE unsigned short calc_timer(unsigned short step_rate) {
     timer = (unsigned short)pgm_read_word_near(table_address);
     timer -= (((unsigned short)pgm_read_word_near(table_address+2) * (unsigned char)(step_rate & 0x0007))>>3);
   }
-  if(timer < 100) { timer = 100; MYSERIAL.print(MSG_STEPPER_TOO_HIGH); MYSERIAL.println(step_rate); }//(20kHz this should never happen)
+  if(timer < 100) { timer = 100; SERIAL_PROTOCOL(MSG_STEPPER_TOO_HIGH); SERIAL_PROTOCOLLN(step_rate); }//(20kHz this should never happen)
   return timer;
 }
 
