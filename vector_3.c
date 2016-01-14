@@ -22,11 +22,13 @@
 #ifdef ENABLE_AUTO_BED_LEVELING
 #include "vector_3.h"
 
-void vector_3_init_3(vector_3 *v, float x, float y, float z)
+vector_3* vector_3_init_3(float x, float y, float z)
 {
+  vector_3 *v = (vector_3 *)malloc(sizeof(vector_3));
   v->x = x;
   v->y = y;
   v->z = z;
+  return v;
 }
 
 void vector_3_apply_rotation(vector_3 *v, matrix_3x3 matrix)

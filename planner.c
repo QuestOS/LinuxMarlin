@@ -937,8 +937,8 @@ block->steps_y = labs((target[X_AXIS]-position[X_AXIS]) - (target[Y_AXIS]-positi
 }
 
 #ifdef ENABLE_AUTO_BED_LEVELING
-vector_3 plan_get_position() {
-	vector_3 position = vector_3(st_get_position_mm(X_AXIS), st_get_position_mm(Y_AXIS), st_get_position_mm(Z_AXIS));
+vector_3* plan_get_position() {
+	vector_3 *position = vector_3_init_3(st_get_position_mm(X_AXIS), st_get_position_mm(Y_AXIS), st_get_position_mm(Z_AXIS));
 
 	//position.debug("in plan_get position");
 	//plan_bed_level_matrix.debug("in plan_get bed_level");

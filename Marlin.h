@@ -25,10 +25,10 @@
 #include "pins.h"
 
 #define SERIAL_PROTOCOL(x) printf("%s\n", x)
-#define SERIAL_PROTOCOL_F(x,y) //printf("%s, %d\n", x, y)
-#define SERIAL_PROTOCOLPGM(x) //(serialprintPGM(PSTR(x)))
-#define SERIAL_PROTOCOLLN(x) //(MYSERIAL.print(x),MYSERIAL.write('\n'))
-#define SERIAL_PROTOCOLLNPGM(x) //(serialprintPGM(PSTR(x)),MYSERIAL.write('\n'))
+#define SERIAL_PROTOCOL_F(x,y) printf("%f\n", x)
+#define SERIAL_PROTOCOLPGM(x) printf("%s\n", x)
+#define SERIAL_PROTOCOLLN(x) printf("%s\n", x)
+#define SERIAL_PROTOCOLLNPGM(x) printf("%s\n", x)
 
 enum AxisEnum {X_AXIS=0, Y_AXIS=1, Z_AXIS=2, E_AXIS=3};
 
