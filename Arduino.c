@@ -89,3 +89,14 @@ int timeInit(void)
 
     printf("nanoseconds per clock %f\n", clocks_per_ns);
 }
+
+int digitalRead(int pin)
+{
+  //TODO
+  return 0;
+}
+
+void digitalWrite(int pin, int val)
+{
+  //TODO
+}

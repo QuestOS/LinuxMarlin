@@ -446,7 +446,7 @@ static const bool Z_MAX_ENDSTOP_INVERTING = false; // set to true to invert the 
 //#define SDSLOW // Use slower SD transfer mode (not normally needed - uncomment if you're getting volume init error)
 //#define ENCODER_PULSES_PER_STEP 1 // Increase if you have a high resolution encoder
 //#define ENCODER_STEPS_PER_MENU_ITEM 5 // Set according to ENCODER_PULSES_PER_STEP or your liking
-#define NEWPANEL
+//#define NEWPANEL
 
 //Uncomment the lines below to save program flash space
 #define DISABLE_LCD_MOTION_MENU

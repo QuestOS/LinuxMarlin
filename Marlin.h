@@ -19,16 +19,16 @@
 // #include <avr/eeprom.h>
 // #include <avr/interrupt.h>
 
-
+#include "Arduino.h"
 #include "fastio.h"
 #include "Configuration.h"
 #include "pins.h"
 
 #define SERIAL_PROTOCOL(x) printf("%s\n", x)
-#define SERIAL_PROTOCOL_F(x,y) //printf("%s, %d\n", x, y)
-#define SERIAL_PROTOCOLPGM(x) //(serialprintPGM(PSTR(x)))
-#define SERIAL_PROTOCOLLN(x) //(MYSERIAL.print(x),MYSERIAL.write('\n'))
-#define SERIAL_PROTOCOLLNPGM(x) //(serialprintPGM(PSTR(x)),MYSERIAL.write('\n'))
+#define SERIAL_PROTOCOL_F(x,y) printf("%f\n", x)
+#define SERIAL_PROTOCOLPGM(x) printf("%s\n", x)
+#define SERIAL_PROTOCOLLN(x) printf("%s\n", x)
+#define SERIAL_PROTOCOLLNPGM(x) printf("%s\n", x)
 
 #define errExit(msg) 	do { perror(msg); exit(EXIT_FAILURE); \
 										 	} while (0)
@@ -47,6 +47,7 @@ void manage_inactivity();
 
 //TODO
 inline void cli() {};
+inline void sei() {};
 unsigned char SREG;
 
 #if defined(DUAL_X_CARRIAGE) && defined(X_ENABLE_PIN) && X_ENABLE_PIN > -1 \
@@ -113,10 +114,9 @@ unsigned char SREG;
 #endif
 
 
-//TODO
 #ifndef CRITICAL_SECTION_START
-  #define CRITICAL_SECTION_START  //unsigned char _sreg = SREG; cli();
-  #define CRITICAL_SECTION_END    //SREG = _sreg;
+  #define CRITICAL_SECTION_START  unsigned char _sreg = SREG; cli();
+  #define CRITICAL_SECTION_END    SREG = _sreg;
 #endif //CRITICAL_SECTION_START
 
 extern int extrudemultiply;

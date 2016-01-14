@@ -8,12 +8,8 @@ DEPS = Marlin.h
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 
-all: Marlin_main.o Arduino.o planner.o stepper.o
-	$(CC) -o marlin Marlin_main.o Arduino.o planner.o stepper.o $(CFLAGS)
-
-fornow:
-	$(CC) -Wall -o marlin Marlin_main.c
-
+all: Marlin_main.o Arduino.o planner.o stepper.o temperature.o vector_3.o
+	$(CC) -o marlin Marlin_main.o Arduino.o planner.o stepper.o temperature.o vector_3.o $(CFLAGS)
 
 clean:
 	rm -f *.o marlin

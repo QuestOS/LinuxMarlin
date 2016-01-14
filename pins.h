@@ -1548,7 +1548,7 @@
 
 // If soft or fast PWM is off then use Teensyduino pin numbering, Marlin
 // fastio pin numbering otherwise
-#ifdef FAN_SOFT_PWM || FAST_PWM_FAN
+#if defined(FAN_SOFT_PWM) || defined(FAST_PWM_FAN)
 	#define FAN_PIN        22  // Fan
 #else
 	#define FAN_PIN        16  // Fan
