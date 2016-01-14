@@ -30,6 +30,9 @@
 #define SERIAL_PROTOCOLLN(x) //(MYSERIAL.print(x),MYSERIAL.write('\n'))
 #define SERIAL_PROTOCOLLNPGM(x) //(serialprintPGM(PSTR(x)),MYSERIAL.write('\n'))
 
+#define errExit(msg) 	do { perror(msg); exit(EXIT_FAILURE); \
+										 	} while (0)
+
 enum AxisEnum {X_AXIS=0, Y_AXIS=1, Z_AXIS=2, E_AXIS=3};
 
 int setup(char *path);
