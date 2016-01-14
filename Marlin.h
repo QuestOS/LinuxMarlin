@@ -33,6 +33,12 @@
 #define errExit(msg) 	do { perror(msg); exit(EXIT_FAILURE); \
 										 	} while (0)
 
+#ifdef DEBUG
+#define DEBUG_PRINT(...) do{ fprintf( stderr, __VA_ARGS__ ); } while( false )
+#else
+#define DEBUG_PRINT(...) do{ } while ( false )
+#endif
+
 enum AxisEnum {X_AXIS=0, Y_AXIS=1, Z_AXIS=2, E_AXIS=3};
 
 int setup(char *path);

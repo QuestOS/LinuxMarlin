@@ -27,6 +27,8 @@
 #include "temperature.h"
 #include "speed_lookuptable.h"
 //#include "DAC.h"
+#include <time.h>
+#include <signal.h>
 #if defined(DIGIPOTSS_PIN) && DIGIPOTSS_PIN > -1
 #include <SPI.h>
 #endif
@@ -167,10 +169,10 @@ asm volatile ( \
 
 // Some useful constants
 
-//TODO
-#define ENABLE_STEPPER_DRIVER_INTERRUPT()  //TIMSK1 |= (1<<OCIE1A)
-#define DISABLE_STEPPER_DRIVER_INTERRUPT() //TIMSK1 &= ~(1<<OCIE1A)
-
+#define ENABLE_STEPPER_DRIVER_INTERRUPT()   extern sigset_t mask; \
+                                            sigprocmask(SIG_UNBLOCK, &mask, NULL)
+#define DISABLE_STEPPER_DRIVER_INTERRUPT()  extern sigset_t mask; \
+                                            sigprocmask(SIG_BLOCK, &mask, NULL)
 
 void checkHitEndstops()
 {
@@ -298,7 +300,10 @@ FORCE_INLINE void trapezoid_generator_reset() {
   step_loops_nominal = step_loops;
   acc_step_rate = current_block->initial_rate;
   acceleration_time = calc_timer(acc_step_rate);
-  OCR1A = acceleration_time;
+  //OCR1A = acceleration_time;
+  its.it_value.tv_nsec = 500 * acceleration_time;
+  if (timer_settime(timerid, 0, &its, NULL) == -1)
+    errExit("timer_settime");
 
 //    SERIAL_ECHO_START;
 //    SERIAL_ECHOPGM("advance :");
@@ -312,9 +317,15 @@ FORCE_INLINE void trapezoid_generator_reset() {
 
 }
 
+timer_t timerid;
+struct itimerspec its;
+sigset_t mask;
+
 // "The Stepper Driver Interrupt" - This timer interrupt is the workhorse.
 // It pops blocks from the block_buffer and executes them by pulsing the stepper pins appropriately.
-ISR(TIMER1_COMPA_vect)
+//ISR(TIMER1_COMPA_vect)
+static void
+handler(int sig, siginfo_t *si, void *uc)
 {
   // If there is no current block, attempt to pop one from the buffer
   if (current_block == NULL) {
@@ -342,7 +353,11 @@ ISR(TIMER1_COMPA_vect)
 //      #endif
     }
     else {
-        OCR1A=2000; // 1kHz.
+        //OCR1A=2000; // 1kHz.
+        // 1kHz
+        its.it_value.tv_nsec = 500 * 2000; //1ms
+        if (timer_settime(timerid, 0, &its, NULL) == -1)
+          errExit("timer_settime");
     }
   }
 
@@ -654,7 +669,10 @@ ISR(TIMER1_COMPA_vect)
 
       // step_rate to timer interval
       timer = calc_timer(acc_step_rate);
-      OCR1A = timer;
+      //OCR1A = timer;
+      its.it_value.tv_nsec = 500 * timer;
+      if (timer_settime(timerid, 0, &its, NULL) == -1)
+        errExit("timer_settime");
       acceleration_time += timer;
       #ifdef ADVANCE
         for(int8_t i=0; i < step_loops; i++) {
@@ -683,7 +701,10 @@ ISR(TIMER1_COMPA_vect)
 
       // step_rate to timer interval
       timer = calc_timer(step_rate);
-      OCR1A = timer;
+      //OCR1A = timer;
+      its.it_value.tv_nsec = 500 * timer;
+      if (timer_settime(timerid, 0, &its, NULL) == -1)
+        errExit("timer_settime");
       deceleration_time += timer;
       #ifdef ADVANCE
         for(int8_t i=0; i < step_loops; i++) {
@@ -696,7 +717,10 @@ ISR(TIMER1_COMPA_vect)
       #endif //ADVANCE
     }
     else {
-      OCR1A = OCR1A_nominal;
+      //OCR1A = OCR1A_nominal;
+      its.it_value.tv_nsec = 500 * OCR1A_nominal;
+      if (timer_settime(timerid, 0, &its, NULL) == -1)
+        errExit("timer_settime");
       // ensure we're running at the correct step rate, even if we just came off an acceleration
       step_loops = step_loops_nominal;
     }
@@ -933,7 +957,6 @@ void st_init()
     disable_e2();
   #endif
 /*
-  TODO
   // waveform generation = 0100 = CTC
   TCCR1B &= ~(1<<WGM13);
   TCCR1B |=  (1<<WGM12);
@@ -954,6 +977,38 @@ void st_init()
   OCR1A = 0x4000;
   TCNT1 = 0;
 */
+
+  struct sigaction sa;
+  struct sigevent sev;
+
+  /* establish handler for timer signal */
+	sa.sa_flags = SA_SIGINFO;
+	sa.sa_sigaction = handler;
+	sigemptyset(&sa.sa_mask);
+	if (sigaction(SIGALRM, &sa, NULL) == -1)
+		errExit("sigaction");
+
+  /* block timer signal temporarily */
+	sigemptyset(&mask);
+	sigaddset(&mask, SIGALRM);
+	if (sigprocmask(SIG_SETMASK, &mask, NULL) == -1)
+		errExit("sigprocmask");
+
+	/* create the timer */
+	sev.sigev_notify = SIGEV_SIGNAL;
+	sev.sigev_signo = SIGALRM;
+	sev.sigev_value.sival_ptr = &timerid;
+	if (timer_create(CLOCK_REALTIME, &sev, &timerid) == -1)
+		errExit("timer_create");
+
+  DEBUG_PRINT("timer ID is 0x%lx\n", (long) timerid);
+
+  /* start the timer */
+  memset(&its, 0, sizeof(struct itimerspec));
+  its.it_value.tv_nsec = 500 * 0x4000;
+  if (timer_settime(timerid, 0, &its, NULL) == -1)
+    errExit("timer_settime");
+
   ENABLE_STEPPER_DRIVER_INTERRUPT();
 
   #ifdef ADVANCE
