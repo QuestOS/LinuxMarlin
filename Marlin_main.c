@@ -160,6 +160,20 @@ int current_read = 0;
 //===========================================================================
 //=============================ROUTINES=============================
 //===========================================================================
+
+//block all signals to imitate disabling interrupts
+inline void
+cli()
+{
+  sigprocmask(SIG_SETMASK, &global_interrupt, &old_global_interrupt);
+}
+
+inline void
+sei()
+{
+  sigprocmask(SIG_SETMASK, &old_global_interrupt, NULL);
+}
+
 float code_value()
 {
   return (strtod(&cmdbuffer[strchr_pointer - cmdbuffer + 1], NULL));
@@ -323,6 +337,10 @@ int setup(char *path)
 
   //init stepper
   st_init();
+
+  //init global_interrupt
+  sigfillset(&global_interrupt);
+  sigemptyset(&old_global_interrupt);
 
   return file;
 }

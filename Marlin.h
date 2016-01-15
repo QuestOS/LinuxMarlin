@@ -23,6 +23,7 @@
 #include "fastio.h"
 #include "Configuration.h"
 #include "pins.h"
+#include <signal.h>
 
 //TODO
 #define F_CPU 16000000
@@ -61,9 +62,9 @@ void clamp_to_software_endstops(float target[3]);
 void kill();
 void manage_inactivity();
 
-//TODO
-inline void cli() {};
-inline void sei() {};
+sigset_t global_interrupt, old_global_interrupt;
+extern inline void cli();
+extern inline void sei();
 unsigned char SREG;
 
 #if defined(DUAL_X_CARRIAGE) && defined(X_ENABLE_PIN) && X_ENABLE_PIN > -1 \
