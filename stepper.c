@@ -21,16 +21,16 @@
 /* The timer calculations of this module informed by the 'RepRap cartesian firmware' by Zack Smith
    and Philipp Tiefenbacher. */
 
+#include <signal.h>
+#include <time.h>
 #include "Marlin.h"
 #include "stepper.h"
 #include "planner.h"
-#include "temperature.h"
+//#include "temperature.h"
 #include "language.h"
 #include "speed_lookuptable.h"
 #include "avr.h"
 //#include "DAC.h"
-#include <time.h>
-#include <signal.h>
 #if defined(DIGIPOTSS_PIN) && DIGIPOTSS_PIN > -1
 #include <SPI.h>
 #endif
@@ -41,6 +41,9 @@
 //===========================================================================
 block_t *current_block;  // A pointer to the block currently being traced
 
+timer_t timerid;
+struct itimerspec its;
+sigset_t mask;
 
 //===========================================================================
 //=============================private variables ============================
@@ -243,8 +246,9 @@ void st_wake_up() {
 }
 
 void step_wait(){
-    for(int8_t i=0; i < 6; i++){
-    }
+  int8_t i;
+   for(i=0; i < 6; i++){
+   }
 }
 
 
@@ -316,10 +320,6 @@ FORCE_INLINE void trapezoid_generator_reset() {
 //    SERIAL_ECHOLN(current_block->final_advance/256.0);
 
 }
-
-timer_t timerid;
-struct itimerspec its;
-sigset_t mask;
 
 // "The Stepper Driver Interrupt" - This timer interrupt is the workhorse.
 // It pops blocks from the block_buffer and executes them by pulsing the stepper pins appropriately.
@@ -559,8 +559,8 @@ handler(int sig, siginfo_t *si, void *uc)
     #endif //!ADVANCE
 
 
-
-    for(int8_t i=0; i < step_loops; i++) { // Take multiple steps per interrupt (For high speed moves)
+    int8_t i;
+    for(i=0; i < step_loops; i++) { // Take multiple steps per interrupt (For high speed moves)
       #ifndef AT90USB
       MSerial.checkRx(); // Check for serial chars.
       #endif
@@ -735,7 +735,6 @@ handler(int sig, siginfo_t *si, void *uc)
     }
   }
 }
-#endif
 
 #ifdef ADVANCE
   unsigned char old_OCR0A;
@@ -1038,7 +1037,7 @@ void st_init()
 void st_synchronize()
 {
     while( blocks_queued()) {
-    manage_heater();
+    //manage_heater();
     manage_inactivity();
   }
 }

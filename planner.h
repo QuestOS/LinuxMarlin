@@ -106,7 +106,7 @@ extern volatile unsigned char block_buffer_tail;
 
 // Called when the current block is no longer needed. Discards the block and makes the memory
 // availible for new blocks.    
-FORCE_INLINE void plan_discard_current_block()  
+static FORCE_INLINE void plan_discard_current_block()  
 {
   if (block_buffer_head != block_buffer_tail) {
     block_buffer_tail = (block_buffer_tail + 1) & (BLOCK_BUFFER_SIZE - 1);  
@@ -114,7 +114,7 @@ FORCE_INLINE void plan_discard_current_block()
 }
 
 // Gets the current block. Returns NULL if buffer empty
-FORCE_INLINE block_t *plan_get_current_block() 
+static FORCE_INLINE block_t *plan_get_current_block() 
 {
   if (block_buffer_head == block_buffer_tail) { 
     return(NULL); 
@@ -137,7 +137,7 @@ void plan_set_position(float x, float y, float z, const float e);
 void check_axes_activity();
 
 // Gets the current block. Returns NULL if buffer empty
-FORCE_INLINE bool blocks_queued() 
+static FORCE_INLINE bool blocks_queued() 
 {
   if (block_buffer_head == block_buffer_tail) { 
     return false; 

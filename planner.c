@@ -54,7 +54,7 @@
 #include "Marlin.h"
 #include "planner.h"
 #include "stepper.h"
-#include "temperature.h"
+//#include "temperature.h"
 //#include "language.h"
 
 //===========================================================================
@@ -534,7 +534,7 @@ void plan_buffer_line(const float &x, const float &y, const float &z, const floa
   // Rest here until there is room in the buffer.
   while(block_buffer_tail == next_buffer_head)
   {
-    manage_heater(); 
+    //manage_heater(); 
     manage_inactivity(); 
     //lcd_update();
   }
@@ -726,7 +726,8 @@ block->steps_y = labs((target[X_AXIS]-position[X_AXIS]) - (target[Y_AXIS]-positi
   // Calculate and limit speed in mm/sec for each axis
   float current_speed[4];
   float speed_factor = 1.0; //factor <=1 do decrease speed
-  for(int i=0; i < 4; i++)
+  int i;
+  for(i=0; i < 4; i++)
   {
     current_speed[i] = delta_mm[i] * inverse_second;
     if(fabs(current_speed[i]) > max_feedrate[i])
@@ -771,7 +772,8 @@ block->steps_y = labs((target[X_AXIS]-position[X_AXIS]) - (target[Y_AXIS]-positi
   // Correct the speed  
   if( speed_factor < 1.0)
   {
-    for(unsigned char i=0; i < 4; i++)
+    unsigned char i;
+    for(i=0; i < 4; i++)
     {
       current_speed[i] *= speed_factor;
     }
@@ -993,7 +995,8 @@ void set_extrude_min_temp(float temp)
 // Calculate the steps/s^2 acceleration rates, based on the mm/s^s
 void reset_acceleration_rates()
 {
-	for(int8_t i=0; i < NUM_AXIS; i++)
+  int8_t i;
+	for(i=0; i < NUM_AXIS; i++)
         {
         axis_steps_per_sqr_second[i] = max_acceleration_units_per_sq_second[i] * axis_steps_per_unit[i];
         }

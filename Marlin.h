@@ -59,7 +59,7 @@ void process_commands();
 void get_coordinates();
 void prepare_move();
 void clamp_to_software_endstops(float target[3]);
-void kill();
+void ikill();
 void manage_inactivity();
 
 sigset_t global_interrupt, old_global_interrupt;

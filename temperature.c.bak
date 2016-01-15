@@ -315,7 +315,8 @@ void PID_autotune(float temp, int extruder, int ncycles)
 void updatePID()
 {
 #ifdef PIDTEMP
-  for(int e = 0; e < EXTRUDERS; e++) { 
+	int e;
+  for(e = 0; e < EXTRUDERS; e++) { 
      temp_iState_max[e] = PID_INTEGRAL_DRIVE_MAX / Ki;  
   }
 #endif
@@ -412,7 +413,8 @@ void manage_heater()
 
   updateTemperaturesFromRawValues();
 
-  for(int e = 0; e < EXTRUDERS; e++) 
+	int e;
+  for(e = 0; e < EXTRUDERS; e++) 
   {
 
   #ifdef PIDTEMP
@@ -675,7 +677,8 @@ static float analog2tempBed(int raw) {
     and this function is called from normal context as it is too slow to run in interrupts and will block the stepper routine otherwise */
 static void updateTemperaturesFromRawValues()
 {
-    for(uint8_t e=0;e<EXTRUDERS;e++)
+		uint8_t e;
+    for(e=0;e<EXTRUDERS;e++)
     {
         current_temperature[e] = analog2temp(current_temperature_raw[e], e);
     }
@@ -698,9 +701,9 @@ void tp_init()
   MCUCR=(1<<JTD); 
   MCUCR=(1<<JTD);
 #endif
-  
+  int e;
   // Finish init of mult extruder arrays 
-  for(int e = 0; e < EXTRUDERS; e++) {
+  for(e = 0; e < EXTRUDERS; e++) {
     // populate with the first value 
     maxttemp[e] = maxttemp[0];
 #ifdef PIDTEMP
@@ -897,7 +900,8 @@ void setWatch()
 
 void disable_heater()
 {
-  for(int i=0;i<EXTRUDERS;i++)
+	int i;
+  for(i=0;i<EXTRUDERS;i++)
     setTargetHotend(0,i);
   setTargetBed(0);
   #if defined(TEMP_0_PIN) && TEMP_0_PIN > -1

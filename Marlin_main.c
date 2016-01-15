@@ -185,7 +185,7 @@ bool code_seen(char code)
   return (strchr_pointer != NULL);  //Return True if a character was found
 }
 
-void kill()
+void ikill()
 {
   exit(1);
   //TODO
@@ -527,8 +527,9 @@ void process_commands()
 
 void get_coordinates()
 {
+  int8_t i;
   bool seen[4]={false,false,false,false};
-  for(int8_t i=0; i < NUM_AXIS; i++) {
+  for(i=0; i < NUM_AXIS; i++) {
     if(code_seen(axis_codes[i]))
     {
       destination[i] = (float)code_value() + (axis_relative_modes[i] || relative_mode)*current_position[i];
@@ -674,7 +675,8 @@ void prepare_move()
     plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate*feedmultiply/60/100.0, active_extruder);
   }
 #endif //else DELTA
-  for(int8_t i=0; i < NUM_AXIS; i++) {
+  int8_t i;
+  for(i=0; i < NUM_AXIS; i++) {
     current_position[i] = destination[i];
   }
 }
@@ -683,7 +685,7 @@ void manage_inactivity()
 {
   if( (millis() - previous_millis_cmd) >  max_inactive_time )
     if(max_inactive_time)
-      kill();
+      ikill();
   if(stepper_inactive_time)  {
     if( (millis() - previous_millis_cmd) >  stepper_inactive_time )
     {
