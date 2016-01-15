@@ -27,6 +27,7 @@
 
 //TODO
 #define F_CPU 16000000
+#define NGPIO 14
 
 #define SERIAL_PROTOCOL(x) printf("%s\n", x)
 #define SERIAL_PROTOCOL_F(x,y) printf("%f\n", x)

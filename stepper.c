@@ -30,6 +30,8 @@
 #include "language.h"
 #include "speed_lookuptable.h"
 #include "avr.h"
+#include <mraa.h>
+#include "fastio.h"
 //#include "DAC.h"
 #if defined(DIGIPOTSS_PIN) && DIGIPOTSS_PIN > -1
 #include <SPI.h>
@@ -795,6 +797,8 @@ handler(int sig, siginfo_t *si, void *uc)
   }
 #endif
 #endif // ADVANCE
+
+mraa_gpio_context gpio_cxt[NGPIO];
 
 void st_init()
 {
