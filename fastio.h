@@ -12,13 +12,10 @@
   utility functions
 */
 
-//TODO
-#define WRITE(IO, v) 
-#define READ(IO) 0
+void WRITE(unsigned IO, int v);
+int READ(unsigned IO); 
 
-#define SET_INPUT(IO) 
-#define SET_OUTPUT(IO) 
-
-
+void SET_INPUT(unsigned IO);
+void SET_OUTPUT(unsigned IO);
 
 #endif
