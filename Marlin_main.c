@@ -335,6 +335,12 @@ int setup(char *path)
     exit(-1);
   }
 
+  //tp_init();    // Initialize temperature loop
+  plan_init();  // Initialize planner;
+#ifdef DAC_STEPPER_CURRENT
+  //dac_init(); //Initialize DAC to set stepper current
+#endif
+
   //init stepper
   st_init();
 
@@ -345,60 +351,8 @@ int setup(char *path)
   return file;
 }
 
-/*
-char *readline(char **line, int *len, int fd) {
-
-	int count = 0;
-
-
-
-	while (1) {
-		// Check if you need to read more chars
-		if (current_read >= buffer_size) {
-			int read_len = read(fd, line_buf, MAX_LINE_BUF);
-			if (read_len == -1) {
-				printf("read error\n");
-				exit(1);
-			}
-			buffer_size = read_len;
-			current_read = 0;
-		}
-
-		if (line_buf[current_read] == '\n') {
-			break;
-		}
-
-		count++;
-
-		current_read++;
-	}
-
-	*line = malloc(count * sizeof(char));
-
-
-
-	return ret;
-}
-*/
-
-void loop(int fd) {
-
-
-	// For line in file
-/*
-	char *line = NULL;
-	int len = 0;
-	ssize_t read;
-
-
-	while ((read = readline(&line, &len, fd)) != -1) {
-		printf("line of size %lu = %s\n", len, line);
-		line *l = calloc(sizeof(line));
-		parse(line, l);
-		len = 0;
-	}*/
-
-  
+void loop(int fd)
+{
   while (1) {
     if (get_command())
       process_commands();

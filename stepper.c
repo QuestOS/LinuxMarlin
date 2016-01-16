@@ -271,17 +271,14 @@ FORCE_INLINE unsigned short calc_timer(unsigned short step_rate) {
   if(step_rate < (F_CPU/500000)) step_rate = (F_CPU/500000);
   step_rate -= (F_CPU/500000); // Correct for minimal speed
   if(step_rate >= (8*256)){ // higher step rate
-    unsigned short table_address = (unsigned short)&speed_lookuptable_fast[(unsigned char)(step_rate>>8)][0];
     unsigned char tmp_step_rate = (step_rate & 0x00ff);
-    unsigned short gain = (unsigned short)pgm_read_word_near(table_address+2);
+    unsigned short gain = (unsigned short)speed_lookuptable_fast[(unsigned char)(step_rate>>8)][1];
     MultiU16X8toH16(timer, tmp_step_rate, gain);
-    timer = (unsigned short)pgm_read_word_near(table_address) - timer;
+    timer = (unsigned short)speed_lookuptable_fast[(unsigned char)(step_rate>>8)][0] - timer;
   }
   else { // lower step rates
-    unsigned short table_address = (unsigned short)&speed_lookuptable_slow[0][0];
-    table_address += ((step_rate)>>1) & 0xfffc;
-    timer = (unsigned short)pgm_read_word_near(table_address);
-    timer -= (((unsigned short)pgm_read_word_near(table_address+2) * (unsigned char)(step_rate & 0x0007))>>3);
+    timer = (unsigned short)speed_lookuptable_slow[(unsigned char)(step_rate>>3)][0];
+    timer -= (((unsigned short)speed_lookuptable_slow[(unsigned char)(step_rate>>3)][1] * (unsigned char)(step_rate & 0x0007))>>3);
   }
   if(timer < 100) { timer = 100; SERIAL_PROTOCOL(MSG_STEPPER_TOO_HIGH); SERIAL_PROTOCOLLN(step_rate); }//(20kHz this should never happen)
   return timer;
@@ -988,24 +985,24 @@ void st_init()
   struct sigevent sev;
 
   /* establish handler for timer signal */
-	sa.sa_flags = SA_SIGINFO;
-	sa.sa_sigaction = handler;
-	sigemptyset(&sa.sa_mask);
-	if (sigaction(SIGALRM, &sa, NULL) == -1)
-		errExit("sigaction");
+  sa.sa_flags = SA_SIGINFO;
+  sa.sa_sigaction = handler;
+  sigemptyset(&sa.sa_mask);
+  if (sigaction(SIGALRM, &sa, NULL) == -1)
+ 	errExit("sigaction");
 
   /* block timer signal temporarily */
-	sigemptyset(&mask);
-	sigaddset(&mask, SIGALRM);
-	if (sigprocmask(SIG_SETMASK, &mask, NULL) == -1)
-		errExit("sigprocmask");
+  sigemptyset(&mask);
+  sigaddset(&mask, SIGALRM);
+  if (sigprocmask(SIG_SETMASK, &mask, NULL) == -1)
+          errExit("sigprocmask");
 
-	/* create the timer */
-	sev.sigev_notify = SIGEV_SIGNAL;
-	sev.sigev_signo = SIGALRM;
-	sev.sigev_value.sival_ptr = &timerid;
-	if (timer_create(CLOCK_REALTIME, &sev, &timerid) == -1)
-		errExit("timer_create");
+  /* create the timer */
+  sev.sigev_notify = SIGEV_SIGNAL;
+  sev.sigev_signo = SIGALRM;
+  sev.sigev_value.sival_ptr = &timerid;
+  if (timer_create(CLOCK_REALTIME, &sev, &timerid) == -1)
+          errExit("timer_create");
 
   DEBUG_PRINT("timer ID is 0x%lx\n", (long) timerid);
 
@@ -1034,6 +1031,7 @@ void st_init()
 
 
 // Block until all buffered steps are executed
+/*
 void st_synchronize()
 {
     while( blocks_queued()) {
@@ -1041,6 +1039,7 @@ void st_synchronize()
     manage_inactivity();
   }
 }
+*/
 
 void st_set_position(const long x, const long y, const long z, const long e)
 {
@@ -1076,6 +1075,7 @@ float st_get_position_mm(uint8_t axis)
 }
 #endif  // ENABLE_AUTO_BED_LEVELING
 
+/*
 void finishAndDisableSteppers()
 {
   st_synchronize();
@@ -1086,6 +1086,7 @@ void finishAndDisableSteppers()
   disable_e1();
   disable_e2();
 }
+*/
 
 void quickStop()
 {

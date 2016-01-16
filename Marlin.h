@@ -25,7 +25,7 @@
 #include "pins.h"
 #include <signal.h>
 
-//TODO
+/* only support this frequency value for now */
 #define F_CPU 16000000
 
 #define SERIAL_PROTOCOL(x) printf("%s\n", x)
