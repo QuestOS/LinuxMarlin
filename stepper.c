@@ -326,6 +326,7 @@ FORCE_INLINE void trapezoid_generator_reset() {
 static void
 handler(int sig, siginfo_t *si, void *uc)
 {
+  //DEBUG_PRINT("timer fired\n");
   // If there is no current block, attempt to pop one from the buffer
   if (current_block == NULL) {
     // Anything in the buffer?
@@ -357,6 +358,7 @@ handler(int sig, siginfo_t *si, void *uc)
     else {
         //OCR1A=2000; // 1kHz.
         // 1kHz
+        //DEBUG_PRINT("no move\n");
         its.it_value.tv_nsec = 500 * 2000; //1ms
         if (timer_settime(timerid, 0, &its, NULL) == -1)
           errExit("timer_settime");
@@ -795,8 +797,6 @@ handler(int sig, siginfo_t *si, void *uc)
 #endif
 #endif // ADVANCE
 
-mraa_gpio_context gpio_cxt[NGPIO];
-
 void st_init()
 {
   digipot_init(); //Initialize Digipot Motor Current
@@ -985,10 +985,10 @@ void st_init()
   TCNT1 = 0;
 */
 
+  /* establish handler for timer signal */
   struct sigaction sa;
   struct sigevent sev;
 
-  /* establish handler for timer signal */
   sa.sa_flags = SA_SIGINFO;
   sa.sa_sigaction = handler;
   sigemptyset(&sa.sa_mask);
@@ -999,14 +999,14 @@ void st_init()
   sigemptyset(&mask);
   sigaddset(&mask, SIGALRM);
   if (sigprocmask(SIG_SETMASK, &mask, NULL) == -1)
-          errExit("sigprocmask");
+    errExit("sigprocmask");
 
   /* create the timer */
   sev.sigev_notify = SIGEV_SIGNAL;
   sev.sigev_signo = SIGALRM;
   sev.sigev_value.sival_ptr = &timerid;
   if (timer_create(CLOCK_REALTIME, &sev, &timerid) == -1)
-          errExit("timer_create");
+    errExit("timer_create");
 
   DEBUG_PRINT("timer ID is 0x%lx\n", (long) timerid);
 

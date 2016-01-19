@@ -318,8 +318,9 @@ int setup(char *path)
 
   file_size = s.st_size;
 
-  if ((file = open(path, O_RDONLY))) {
-    printf("Error opening %s\n", path);
+  DEBUG_PRINT("opening file %s\n", path);
+  if (!(file = open(path, O_RDONLY))) {
+    perror("open file");
     exit(1);
   }
 
@@ -329,6 +330,7 @@ int setup(char *path)
     exit(1);
   }
 
+  DEBUG_PRINT("initializing timer\n");
   //init timer
   if(timeInit() < 0) {
     fprintf(stderr, "Failed to init timer\n");
@@ -336,12 +338,14 @@ int setup(char *path)
   }
 
   //tp_init();    // Initialize temperature loop
+  DEBUG_PRINT("initializing planner\n");
   plan_init();  // Initialize planner;
 #ifdef DAC_STEPPER_CURRENT
   //dac_init(); //Initialize DAC to set stepper current
 #endif
 
   //init stepper
+  DEBUG_PRINT("initializing stepper\n");
   st_init();
 
   //init global_interrupt
@@ -444,6 +448,7 @@ void process_commands()
     {
     case 0: // G0 -> G1
     case 1: // G1
+      DEBUG_PRINT("G0 or G1 found\n");
       if(Stopped == false) {
         get_coordinates(); // For X Y Z E F
         prepare_move();

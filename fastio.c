@@ -1,10 +1,11 @@
 #include "Marlin.h"
 #include <mraa.h>
 
-extern mraa_gpio_context gpio_cxt[];
+mraa_gpio_context gpio_cxt[NGPIO];
 
 void SET_OUTPUT(unsigned IO)
 {
+	DEBUG_PRINT("setting up pin %u\n", IO);
 	if (!gpio_cxt[IO]) {
 		gpio_cxt[IO] = mraa_gpio_init_raw(IO);
 		if (!gpio_cxt[IO]) {

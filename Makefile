@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-I. -lm -lrt -lmraa
+CFLAGS=-I. -lm -lrt -lmraa -DDEBUG
 DEPS = Marlin.h
 
 
