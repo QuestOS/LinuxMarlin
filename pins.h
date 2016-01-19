@@ -1518,21 +1518,21 @@
 //Disable JTAG pins so they can be used for the Extrudrboard
 #define DISABLE_JTAG       true
 
-#define X_STEP_PIN          0
-#define X_DIR_PIN           1
-#define X_ENABLE_PIN       39
+#define X_STEP_PIN          481
+#define X_DIR_PIN           480
+#define X_ENABLE_PIN     		483 
 
-#define Y_STEP_PIN          2
-#define Y_DIR_PIN           3
-#define Y_ENABLE_PIN       38
+#define Y_STEP_PIN          482
+#define Y_DIR_PIN           472
+#define Y_ENABLE_PIN        473
 
-#define Z_STEP_PIN          4
-#define Z_DIR_PIN           5
-#define Z_ENABLE_PIN       23
+#define Z_STEP_PIN          475
+#define Z_DIR_PIN           474
+#define Z_ENABLE_PIN        504
 
-#define E0_STEP_PIN         6
-#define E0_DIR_PIN          7
-#define E0_ENABLE_PIN      19
+#define E0_STEP_PIN         505
+#define E0_DIR_PIN          464
+#define E0_ENABLE_PIN     	509 
 
 // E1 STEP, DIR differ in Printrboard versions, below:
 #define E1_ENABLE_PIN      44
