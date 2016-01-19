@@ -110,7 +110,7 @@ volatile signed char count_direction[NUM_AXIS] = { 1, 1, 1, 1};
 // r27 to store the byte 1 of the 24 bit result
 // XXX: to be tested!!!
 #define MultiU16X8toH16(intRes, charIn1, intIn2) \
-intRes = (uint16_t)(((uint32_t)intIn1 * (uint32_t)intIn2) >> 16)
+intRes = (uint16_t)(((uint32_t)charIn1 * (uint32_t)intIn2) >> 16)
 /*asm volatile ( \
 "clr r26 \n\t" \
 "mul %A1, %B2 \n\t" \
