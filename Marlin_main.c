@@ -358,8 +358,10 @@ int setup(char *path)
 void loop(int fd)
 {
   while (1) {
-    if (get_command())
+    if (get_command()) {
+      DEBUG_PRINT("%s\n", cmdbuffer);
       process_commands();
+    }
 
     //check heater every n milliseconds
     //TODO
@@ -422,6 +424,7 @@ bool get_command()
         if(!comment_mode) cmdbuffer[serial_count++] = serial_char;
       }
       serial_count = 0; //clear buffer
+      return true;
     }
     else
     {
@@ -430,7 +433,7 @@ bool get_command()
     }
   }
 
-  return true;
+  return false;
 }
 
 //#define HOMEAXIS(LETTER) homeaxis(LETTER##_AXIS)
@@ -448,7 +451,6 @@ void process_commands()
     {
     case 0: // G0 -> G1
     case 1: // G1
-      DEBUG_PRINT("G0 or G1 found\n");
       if(Stopped == false) {
         get_coordinates(); // For X Y Z E F
         prepare_move();
