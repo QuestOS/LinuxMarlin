@@ -108,7 +108,9 @@ volatile signed char count_direction[NUM_AXIS] = { 1, 1, 1, 1};
 // uses:
 // r26 to store 0
 // r27 to store the byte 1 of the 24 bit result
+// XXX: to be tested!!!
 #define MultiU16X8toH16(intRes, charIn1, intIn2) \
+intRes = (uint16_t)(((uint32_t)intIn1 * (uint32_t)intIn2) >> 16)
 /*asm volatile ( \
 "clr r26 \n\t" \
 "mul %A1, %B2 \n\t" \
@@ -133,8 +135,8 @@ volatile signed char count_direction[NUM_AXIS] = { 1, 1, 1, 1};
 // uses:
 // r26 to store 0
 // r27 to store the byte 1 of the 48bit result
-// TODO
 #define MultiU24X24toH16(intRes, longIn1, longIn2) \
+intRes = (uint16_t)(((uint64_t)longIn1 * (uint64_t)longIn2) >> 24)
 /*asm volatile ( \
 "clr r26 \n\t" \
 "mul %A1, %B2 \n\t" \
@@ -342,7 +344,6 @@ handler(int sig, siginfo_t *si, void *uc)
       #ifdef Z_LATE_ENABLE
         if(current_block->steps_z > 0) {
           enable_z();
-          //TODO
           /*
           OCR1A = 2000; //1ms wait
           */
@@ -739,7 +740,6 @@ handler(int sig, siginfo_t *si, void *uc)
   unsigned char old_OCR0A;
   // Timer interrupt for E. e_steps is set in the main routine;
   // Timer 0 is shared with millies
-  //TODO
 #if 0
   ISR(TIMER0_COMPA_vect)
   {
