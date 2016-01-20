@@ -29,6 +29,7 @@
 
 #include "Marlin.h"
 #include "Configuration.h"
+#include "ConfigurationStore.h"
 #include "Arduino.h"
 #include "planner.h"
 #include "stepper.h"
@@ -202,6 +203,13 @@ static inline type array(int axis)			\
     { type temp[3] = { X_##CONFIG, Y_##CONFIG, Z_##CONFIG };\
       return temp[axis];}
 
+float base_min_pos[3] = { X_MIN_POS_DEFAULT, Y_MIN_POS_DEFAULT, Z_MIN_POS_DEFAULT };
+float base_max_pos[3] = { X_MAX_POS_DEFAULT, Y_MAX_POS_DEFAULT, Z_MAX_POS_DEFAULT };
+#ifdef ENABLE_AUTO_BED_LEVELING
+float bed_level_probe_offset[3] = {X_PROBE_OFFSET_FROM_EXTRUDER_DEFAULT,
+	Y_PROBE_OFFSET_FROM_EXTRUDER_DEFAULT, -Z_PROBE_OFFSET_FROM_EXTRUDER_DEFAULT};
+#endif
+
 /*
 XYZ_DYN_FROM_CONFIG(float, base_home_pos,   HOME_POS);
 XYZ_DYN_FROM_CONFIG(float, max_length, MAX_LENGTH);
@@ -330,8 +338,12 @@ int setup(char *path)
     exit(1);
   }
 
-  DEBUG_PRINT("initializing timer\n");
+  // loads data from EEPROM if available else uses defaults (and resets step acceleration rate)
+  DEBUG_PRINT("loading data\n");
+  Config_RetrieveSettings();
+
   //init timer
+  DEBUG_PRINT("initializing timer\n");
   if(timeInit() < 0) {
     fprintf(stderr, "Failed to init timer\n");
     exit(-1);

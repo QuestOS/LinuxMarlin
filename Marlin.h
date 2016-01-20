@@ -139,6 +139,10 @@ unsigned char SREG;
 extern int extrudemultiply;
 extern int fanSpeed;
 extern char active_extruder;
+extern float add_homeing[3];
+extern float bed_level_probe_offset[3];
+extern float base_min_pos[3];
+extern float base_max_pos[3];
 
 #define max(a,b) \
    ({ __typeof__ (a) _a = (a); \
