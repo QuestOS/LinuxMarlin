@@ -521,11 +521,7 @@ float junction_deviation = 0.1;
 // Add a new linear movement to the buffer. steps_x, _y and _z is the absolute position in 
 // mm. Microseconds specify how many microseconds the move should take to perform. To aid acceleration
 // calculation the caller must also provide the physical length of the line in millimeters.
-#ifdef ENABLE_AUTO_BED_LEVELING
 void plan_buffer_line(float x, float y, float z, const float e, float feed_rate, const uint8_t extruder)
-#else
-void plan_buffer_line(const float &x, const float &y, const float &z, const float &e, float feed_rate, const uint8_t &extruder)
-#endif  //ENABLE_AUTO_BED_LEVELING
 {
   // Calculate the buffer head after we push this byte
   int next_buffer_head = next_block_index(block_buffer_head);
@@ -534,6 +530,7 @@ void plan_buffer_line(const float &x, const float &y, const float &z, const floa
   // Rest here until there is room in the buffer.
   while(block_buffer_tail == next_buffer_head)
   {
+    DEBUG_PRINT("block buffer full\n");
     //manage_heater(); 
     manage_inactivity(); 
     //lcd_update();
@@ -551,6 +548,12 @@ void plan_buffer_line(const float &x, const float &y, const float &z, const floa
   target[Y_AXIS] = lround(y*axis_steps_per_unit[Y_AXIS]);
   target[Z_AXIS] = lround(z*axis_steps_per_unit[Z_AXIS]);     
   target[E_AXIS] = lround(e*axis_steps_per_unit[E_AXIS]);
+
+  DEBUG_PRINT("axis_steps_per_unit: (%ld, %ld, %ld, %ld)\n", 
+      axis_steps_per_unit[X_AXIS], axis_steps_per_unit[Y_AXIS],
+      axis_steps_per_unit[Z_AXIS], axis_steps_per_unit[E_AXIS]);
+  DEBUG_PRINT("targets: (%ld, %ld, %ld, %ld)\n", 
+      target[X_AXIS], target[Y_AXIS], target[Z_AXIS], target[E_AXIS]);
 
   #ifdef PREVENT_DANGEROUS_EXTRUDE
   if(target[E_AXIS]!=position[E_AXIS])
@@ -594,6 +597,8 @@ block->steps_y = labs((target[X_AXIS]-position[X_AXIS]) - (target[Y_AXIS]-positi
   block->steps_e = labs(target[E_AXIS]-position[E_AXIS]);
   block->steps_e *= extrudemultiply;
   block->steps_e /= 100;
+  DEBUG_PRINT("steps on each axis: (%ld, %ld, %ld, %ld)\n", 
+      block->steps_x, block->steps_y, block->steps_z, block->steps_e);
   block->step_event_count = max(block->steps_x, max(block->steps_y, max(block->steps_z, block->steps_e)));
 
   // Bail if this is a zero-length block
@@ -929,6 +934,7 @@ block->steps_y = labs((target[X_AXIS]-position[X_AXIS]) - (target[Y_AXIS]-positi
 
   // Move buffer head
   block_buffer_head = next_buffer_head;
+  DEBUG_PRINT("block head upated to: %u\n", block_buffer_head);
 
   // Update position
   memcpy(position, target, sizeof(target)); // position[] = target[]
