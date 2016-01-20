@@ -1,29 +1,32 @@
 #include "Marlin.h"
+#include "fastio.h"
 #include <mraa.h>
 
 mraa_gpio_context gpio_cxt[NGPIO];
 
-void SET_OUTPUT(unsigned IO)
+void SET_OUTPUT(unsigned inIO)
 {
-	DEBUG_PRINT("setting up pin %u\n", IO);
-	if (!gpio_cxt[IO]) {
-		gpio_cxt[IO] = mraa_gpio_init_raw(IO);
-		if (!gpio_cxt[IO]) {
+	DEBUG_PRINT("setting up pin %u\n", inIO);
+	int IO = minnow_pin_mapping[inIO];
+	if (!gpio_cxt[inIO]) {
+		gpio_cxt[inIO] = mraa_gpio_init_raw(IO);
+		if (!gpio_cxt[inIO]) {
 			errExit("mraa_gpio_init_raw");
 		}
 	}
-	mraa_gpio_dir(gpio_cxt[IO], MRAA_GPIO_OUT);
+	mraa_gpio_dir(gpio_cxt[inIO], MRAA_GPIO_OUT);
 }
 
-void SET_INPUT(unsigned IO)
+void SET_INPUT(unsigned inIO)
 {
-	if (!gpio_cxt[IO]) {
-		gpio_cxt[IO] = mraa_gpio_init_raw(IO);
-		if (!gpio_cxt[IO]) {
+	int IO = minnow_pin_mapping[inIO];
+	if (!gpio_cxt[inIO]) {
+		gpio_cxt[inIO] = mraa_gpio_init_raw(IO);
+		if (!gpio_cxt[inIO]) {
 			errExit("mraa_gpio_init_raw");
 		}
 	}
-	mraa_gpio_dir(gpio_cxt[IO], MRAA_GPIO_IN);
+	mraa_gpio_dir(gpio_cxt[inIO], MRAA_GPIO_IN);
 }
 
 void WRITE(unsigned IO, int v)
