@@ -7,6 +7,8 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include "fastio.h"
+
 static uint64_t tsc_init = 0;
 static float clocks_per_ns = 0;
 float cpufreq = 0;
@@ -92,20 +94,14 @@ int timeInit(void)
 
 int digitalRead(int pin)
 {
-  //TODO
-  return 0;
+  return READ(pin);
 }
 
 void digitalWrite(int pin, int val)
 {
-  //TODO
+  WRITE(pin, val);
 }
 
-int analogRead(int pin)
-{
-  //TODO
-  return 0;
-}
 void analogWrite(int pin, int val)
 {
   //TODO
