@@ -6,26 +6,22 @@
 #ifndef _FASTIO_ARDUINO_H
 #define _FASTIO_ARDUINO_H
 
-//#include <avr/io.h>
-
-/*
-  utility functions
-*/
+#include <mraa.h>
 
 #define NGPIO 26
+
+struct gpio_context {
+	mraa_gpio_context mraa_cxt;
+	char pin_name[10];
+	int linux_mapping;
+};
+
+extern struct gpio_context gpio_cxt[NGPIO];
 
 void WRITE(unsigned IO, int v);
 int READ(unsigned IO); 
 
 void SET_INPUT(unsigned IO);
 void SET_OUTPUT(unsigned IO);
-
-static const int minnow_pin_mapping[NGPIO+1] = {
-	-1, -1, -1, -1, -1, 476, 481,
-	477, 480, 478, 483, 479, 482,
-	499, 472, 498, 473, 485, 475,
-	484, 474, 338, 504, 339, 505,
-	340, 464, 
-};
 
 #endif

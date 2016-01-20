@@ -1530,9 +1530,9 @@
 #define Z_DIR_PIN           20
 #define Z_ENABLE_PIN        22
 
-#define E0_STEP_PIN         13
-#define E0_DIR_PIN          15
-#define E0_ENABLE_PIN     	17 
+#define E0_STEP_PIN         17
+#define E0_DIR_PIN          19
+#define E0_ENABLE_PIN     	26
 
 // E1 STEP, DIR differ in Printrboard versions, below:
 //#define E1_ENABLE_PIN      44

@@ -356,6 +356,10 @@ int setup(char *path)
   //dac_init(); //Initialize DAC to set stepper current
 #endif
 
+  //init board specific data
+  DEBUG_PRINT("initializing board specific data\n");
+  minnowmax_gpio_init();
+
   //init stepper
   DEBUG_PRINT("initializing stepper\n");
   st_init();
