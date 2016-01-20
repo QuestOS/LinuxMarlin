@@ -60,7 +60,7 @@ void SET_INPUT(unsigned IO)
 
 void WRITE(unsigned IO, int v)
 {
-	DEBUG_PRINT("writing to pin %s\n", gpio_cxt[IO].pin_name);
+	//DEBUG_PRINT("writing to pin %s\n", gpio_cxt[IO].pin_name);
 
 	if (!gpio_cxt[IO].mraa_cxt) {
 		errExit("write to uninitialized gpio");

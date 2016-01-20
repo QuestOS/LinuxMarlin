@@ -497,6 +497,7 @@ handler(int sig, siginfo_t *si, void *uc)
 
 
     int8_t i;
+
     for(i=0; i < step_loops; i++) { // Take multiple steps per interrupt (For high speed moves)
       #ifndef AT90USB
       MSerial.checkRx(); // Check for serial chars.
@@ -589,6 +590,9 @@ handler(int sig, siginfo_t *si, void *uc)
       step_loops = step_loops_nominal;
     }
 
+    DEBUG_PRINT("step_events_completed: %lu, step_event_count: %lu\n",
+        step_events_completed, current_block->step_event_count);
+
     // If current block is finished, reset pointer
     if (step_events_completed >= current_block->step_event_count) {
       current_block = NULL;
@@ -662,79 +666,23 @@ void st_init()
   microstep_init(); //Initialize Microstepping Pins
 
   //Initialize Dir Pins
-  #if defined(X_DIR_PIN) && X_DIR_PIN > -1
     SET_OUTPUT(X_DIR_PIN);
-  #endif
-  #if defined(X2_DIR_PIN) && X2_DIR_PIN > -1
-    SET_OUTPUT(X2_DIR_PIN);
-  #endif
-  #if defined(Y_DIR_PIN) && Y_DIR_PIN > -1
     SET_OUTPUT(Y_DIR_PIN);
-		
-	#if defined(Y_DUAL_STEPPER_DRIVERS) && defined(Y2_DIR_PIN) && (Y2_DIR_PIN > -1)
-	  SET_OUTPUT(Y2_DIR_PIN);
-	#endif
-  #endif
-  #if defined(Z_DIR_PIN) && Z_DIR_PIN > -1
     SET_OUTPUT(Z_DIR_PIN);
-
-    #if defined(Z_DUAL_STEPPER_DRIVERS) && defined(Z2_DIR_PIN) && (Z2_DIR_PIN > -1)
-      SET_OUTPUT(Z2_DIR_PIN);
-    #endif
-  #endif
-  #if defined(E0_DIR_PIN) && E0_DIR_PIN > -1
     SET_OUTPUT(E0_DIR_PIN);
-  #endif
-  #if defined(E1_DIR_PIN) && (E1_DIR_PIN > -1)
-    SET_OUTPUT(E1_DIR_PIN);
-  #endif
-  #if defined(E2_DIR_PIN) && (E2_DIR_PIN > -1)
-    SET_OUTPUT(E2_DIR_PIN);
-  #endif
 
   //Initialize Enable Pins - steppers default to disabled.
-
-  #if defined(X_ENABLE_PIN) && X_ENABLE_PIN > -1
     SET_OUTPUT(X_ENABLE_PIN);
     if(!X_ENABLE_ON) WRITE(X_ENABLE_PIN,HIGH);
-  #endif
-  #if defined(X2_ENABLE_PIN) && X2_ENABLE_PIN > -1
-    SET_OUTPUT(X2_ENABLE_PIN);
-    if(!X_ENABLE_ON) WRITE(X2_ENABLE_PIN,HIGH);
-  #endif
-  #if defined(Y_ENABLE_PIN) && Y_ENABLE_PIN > -1
     SET_OUTPUT(Y_ENABLE_PIN);
     if(!Y_ENABLE_ON) WRITE(Y_ENABLE_PIN,HIGH);
-	
-	#if defined(Y_DUAL_STEPPER_DRIVERS) && defined(Y2_ENABLE_PIN) && (Y2_ENABLE_PIN > -1)
-	  SET_OUTPUT(Y2_ENABLE_PIN);
-	  if(!Y_ENABLE_ON) WRITE(Y2_ENABLE_PIN,HIGH);
-	#endif
-  #endif
-  #if defined(Z_ENABLE_PIN) && Z_ENABLE_PIN > -1
     SET_OUTPUT(Z_ENABLE_PIN);
     if(!Z_ENABLE_ON) WRITE(Z_ENABLE_PIN,HIGH);
-
-    #if defined(Z_DUAL_STEPPER_DRIVERS) && defined(Z2_ENABLE_PIN) && (Z2_ENABLE_PIN > -1)
-      SET_OUTPUT(Z2_ENABLE_PIN);
-      if(!Z_ENABLE_ON) WRITE(Z2_ENABLE_PIN,HIGH);
-    #endif
-  #endif
-  #if defined(E0_ENABLE_PIN) && (E0_ENABLE_PIN > -1)
     SET_OUTPUT(E0_ENABLE_PIN);
     if(!E_ENABLE_ON) WRITE(E0_ENABLE_PIN,HIGH);
-  #endif
-  #if defined(E1_ENABLE_PIN) && (E1_ENABLE_PIN > -1)
-    SET_OUTPUT(E1_ENABLE_PIN);
-    if(!E_ENABLE_ON) WRITE(E1_ENABLE_PIN,HIGH);
-  #endif
-  #if defined(E2_ENABLE_PIN) && (E2_ENABLE_PIN > -1)
-    SET_OUTPUT(E2_ENABLE_PIN);
-    if(!E_ENABLE_ON) WRITE(E2_ENABLE_PIN,HIGH);
-  #endif
 
   //endstops and pullups
-
+#if 0
   #if defined(X_MIN_PIN) && X_MIN_PIN > -1
     SET_INPUT(X_MIN_PIN);
     #ifdef ENDSTOPPULLUP_XMIN
@@ -776,7 +724,7 @@ void st_init()
       WRITE(Z_MAX_PIN,HIGH);
     #endif
   #endif
-
+#endif
 
   //Initialize Step Pins
   #if defined(X_STEP_PIN) && (X_STEP_PIN > -1)

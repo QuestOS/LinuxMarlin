@@ -375,6 +375,7 @@ void loop(int fd)
 {
   while (1) {
     if (get_command()) {
+      DEBUG_PRINT("==========================================\n");
       DEBUG_PRINT("%s\n", cmdbuffer);
       process_commands();
     }
