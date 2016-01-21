@@ -7,6 +7,7 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include "pins.h"
 #include "fastio.h"
 
 static uint64_t tsc_init = 0;
@@ -117,8 +118,8 @@ void analogWrite(int pin, int val)
       errExit("mraa_pwm_init");
     }
 
-    mraa_pwm_period_us(pwm, 1);
-    mraa_pwm_enable(pwm, 1);
+    mraa_pwm_period_us(pwm_cxt, 1);
+    mraa_pwm_enable(pwm_cxt, 1);
   }
   mraa_pwm_write(pwm_cxt, (float)val / (float)255);
 }
