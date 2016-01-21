@@ -13,6 +13,9 @@ static uint64_t tsc_init = 0;
 static float clocks_per_ns = 0;
 float cpufreq = 0;
 
+/* PWM for fan */
+mraa_pwm_context pwm_cxt;
+
 static inline uint64_t rdtsc(void)
 {
     uint32_t lo, hi;
@@ -104,5 +107,18 @@ void digitalWrite(int pin, int val)
 
 void analogWrite(int pin, int val)
 {
-  //TODO
+#ifdef DEBUG
+  if (pin != FAN_PIN)
+    DEBUG_PRINT("analogWrite: trying to use invalid analog pin!");
+#endif
+  if (!pwm_cxt) {
+    pwm_cxt = mraa_pwm_init(GET_OS_MAPPING(pin));
+    if (!pwm_cxt) {
+      errExit("mraa_pwm_init");
+    }
+
+    mraa_pwm_period_us(pwm, 1);
+    mraa_pwm_enable(pwm, 1);
+  }
+  mraa_pwm_write(pwm_cxt, (float)val / (float)255);
 }
