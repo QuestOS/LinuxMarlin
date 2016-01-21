@@ -20,8 +20,8 @@ static const char minnowmax_pin_assignment[NGPIO+1][10] = {
 	"SPI_MOSI", "X_ENABLE", "SPI_CLK", "Y_STEP",
 	"I2C_SCL", "Y_DIR", "I2C_SDA", "Y_ENABLE",
 	"E0_STEP", "Z_STEP", "E0_DIR", "Z_DIR",
-	"S5_0", "Z_ENABLE", "S5_1", "PWM1",
-	"S5_2", "E0_ENABLE",
+	"X_STOP", "Z_ENABLE", "Y_STOP", "PWM1",
+	"Z_STOP", "E0_ENABLE",
 };
 
 void minnowmax_gpio_init()
@@ -49,6 +49,7 @@ void SET_OUTPUT(unsigned IO)
 
 void SET_INPUT(unsigned IO)
 {
+	DEBUG_PRINT("setting up pin %s\n", gpio_cxt[IO].pin_name);
 	if (!gpio_cxt[IO].mraa_cxt) {
 		gpio_cxt[IO].mraa_cxt = mraa_gpio_init_raw(GET_OS_MAPPING(IO));
 		if (!gpio_cxt[IO].mraa_cxt) {
