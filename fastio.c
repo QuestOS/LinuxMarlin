@@ -2,8 +2,6 @@
 #include "fastio.h"
 #include <string.h>
 
-#define GET_OS_MAPPING(n) (gpio_cxt[n].linux_mapping)
-
 struct gpio_context gpio_cxt[NGPIO];
 
 static const int minnowmax_pin_mapping[NGPIO+1] = {

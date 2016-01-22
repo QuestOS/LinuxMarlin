@@ -24,4 +24,6 @@ int READ(unsigned IO);
 void SET_INPUT(unsigned IO);
 void SET_OUTPUT(unsigned IO);
 
+#define GET_OS_MAPPING(n) (gpio_cxt[n].linux_mapping)
+
 #endif

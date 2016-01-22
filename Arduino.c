@@ -7,7 +7,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "pins.h"
+#include "Marlin.h"
 #include "fastio.h"
 
 static uint64_t tsc_init = 0;
@@ -108,10 +108,10 @@ void digitalWrite(int pin, int val)
 
 void analogWrite(int pin, int val)
 {
-#ifdef DEBUG
-  if (pin != FAN_PIN)
-    DEBUG_PRINT("analogWrite: trying to use invalid analog pin!");
-#endif
+//#ifdef DEBUG
+//  if (pin != FAN_PIN)
+//    DEBUG_PRINT("analogWrite: trying to use invalid analog pin!");
+//#endif
   if (!pwm_cxt) {
     pwm_cxt = mraa_pwm_init(GET_OS_MAPPING(pin));
     if (!pwm_cxt) {
