@@ -385,7 +385,7 @@ handler(int sig, siginfo_t *si, void *uc)
     }
 
     // Set direction en check limit switches
-    if ((((out_bits & (1<<X_AXIS)) != 0)&&(out_bits & (1<<Y_AXIS)) != 0)) {   //-X occurs for -A and -B
+    if ((out_bits & (1<<X_AXIS)) != 0) {   // stepping along -X axis
       CHECK_ENDSTOPS
       {
         {
@@ -418,7 +418,7 @@ handler(int sig, siginfo_t *si, void *uc)
       }
     }
 
-    if ((((out_bits & (1<<X_AXIS)) != 0)&&(out_bits & (1<<Y_AXIS)) == 0)) {   // -Y occurs for -A and +B
+    if ((out_bits & (1<<Y_AXIS)) != 0) {   // -direction
       CHECK_ENDSTOPS
       {
         #if defined(Y_MIN_PIN) && Y_MIN_PIN > -1
@@ -480,6 +480,7 @@ handler(int sig, siginfo_t *si, void *uc)
       }
     }
 
+    #ifndef ADVANCE
       if ((out_bits & (1<<E_AXIS)) != 0) {  // -direction
         REV_E_DIR();
         count_direction[E_AXIS]=-1;
@@ -488,6 +489,7 @@ handler(int sig, siginfo_t *si, void *uc)
         NORM_E_DIR();
         count_direction[E_AXIS]=1;
       }
+    #endif //!ADVANCE
 
 
     int8_t i;
@@ -523,6 +525,7 @@ handler(int sig, siginfo_t *si, void *uc)
         
       }
 
+      #ifndef ADVANCE
         counter_e += current_block->steps_e;
         if (counter_e > 0) {
           WRITE_E_STEP(!INVERT_E_STEP_PIN);
@@ -530,6 +533,7 @@ handler(int sig, siginfo_t *si, void *uc)
           count_position[E_AXIS]+=count_direction[E_AXIS];
           WRITE_E_STEP(INVERT_E_STEP_PIN);
         }
+      #endif //!ADVANCE
       step_events_completed += 1;
       if(step_events_completed >= current_block->step_event_count) break;
     }
