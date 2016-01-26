@@ -108,12 +108,11 @@ void digitalWrite(int pin, int val)
 
 void analogWrite(int pin, int val)
 {
-//#ifdef DEBUG
-//  if (pin != FAN_PIN)
-//    DEBUG_PRINT("analogWrite: trying to use invalid analog pin!");
-//#endif
   if (!pwm_cxt) {
-    pwm_cxt = mraa_pwm_init(GET_OS_MAPPING(pin));
+    DEBUG_PRINT("input pin: %d\n", pin);
+    int xxx = GET_OS_MAPPING(pin);
+    DEBUG_PRINT("PWM pin: %d\n", xxx);
+    pwm_cxt = mraa_pwm_init(pin);
     if (!pwm_cxt) {
       errExit("mraa_pwm_init");
     }
