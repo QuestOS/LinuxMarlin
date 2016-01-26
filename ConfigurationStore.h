@@ -8,7 +8,7 @@ void Config_ResetDefault();
 #ifndef DISABLE_M503
 void Config_PrintSettings();
 #else
-FORCE_INLINE void Config_PrintSettings() {}
+static FORCE_INLINE void Config_PrintSettings() {}
 #endif
 
 #ifdef EEPROM_SETTINGS
