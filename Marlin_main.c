@@ -180,6 +180,11 @@ float code_value()
   return (strtod(&cmdbuffer[strchr_pointer - cmdbuffer + 1], NULL));
 }
 
+long code_value_long()
+{
+  return (strtol(&cmdbuffer[strchr_pointer - cmdbuffer + 1], NULL, 10));
+}
+
 bool code_seen(char code)
 {
   strchr_pointer = strchr(cmdbuffer, code);
@@ -193,10 +198,10 @@ void ikill()
 }
 
 #define XYZ_CONSTS_FROM_CONFIG(type, array, CONFIG) \
-static const PROGMEM type array##_P[3] =        \
+static const type array##_P[3] =        \
     { X_##CONFIG, Y_##CONFIG, Z_##CONFIG };     \
 static inline type array(int axis)          \
-    { return pgm_read_any(&array##_P[axis]); }
+    { return array##_P[axis]; }
 
 #define XYZ_DYN_FROM_CONFIG(type, array, CONFIG)	\
 static inline type array(int axis)			\
@@ -210,91 +215,10 @@ float bed_level_probe_offset[3] = {X_PROBE_OFFSET_FROM_EXTRUDER_DEFAULT,
 	Y_PROBE_OFFSET_FROM_EXTRUDER_DEFAULT, -Z_PROBE_OFFSET_FROM_EXTRUDER_DEFAULT};
 #endif
 
-/*
 XYZ_DYN_FROM_CONFIG(float, base_home_pos,   HOME_POS);
 XYZ_DYN_FROM_CONFIG(float, max_length, MAX_LENGTH);
 XYZ_CONSTS_FROM_CONFIG(float, home_retract_mm, HOME_RETRACT_MM);
 XYZ_CONSTS_FROM_CONFIG(signed char, home_dir,  HOME_DIR);
-
-static void homeaxis(int axis) {
-#define HOMEAXIS_DO(LETTER) \
-  ((LETTER##_MIN_PIN > -1 && LETTER##_HOME_DIR==-1) || (LETTER##_MAX_PIN > -1 && LETTER##_HOME_DIR==1))
-
-  if (axis==X_AXIS ? HOMEAXIS_DO(X) :
-      axis==Y_AXIS ? HOMEAXIS_DO(Y) :
-      axis==Z_AXIS ? HOMEAXIS_DO(Z) :
-      0) {
-    int axis_home_dir = home_dir(axis);
-#ifdef DUAL_X_CARRIAGE
-    if (axis == X_AXIS)
-      axis_home_dir = x_home_dir(active_extruder);
-#endif
-
-    current_position[axis] = 0;
-    plan_set_position(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS]);
-	
-
-    // Engage Servo endstop if enabled
-    #ifdef SERVO_ENDSTOPS
-      #if defined (ENABLE_AUTO_BED_LEVELING) && (PROBE_SERVO_DEACTIVATION_DELAY > 0)
-        if (axis==Z_AXIS) {
-          engage_z_probe();
-        }
-	    else
-      #endif
-      if (servo_endstops[axis] > -1) {
-        servos[servo_endstops[axis]].write(servo_endstop_angles[axis * 2]);
-      }
-    #endif
-
-    destination[axis] = 1.5 * max_length(axis) * axis_home_dir;
-    feedrate = homing_feedrate[axis];
-    plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate/60, active_extruder);
-    st_synchronize();
-
-    current_position[axis] = 0;
-    plan_set_position(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS]);
-    destination[axis] = -home_retract_mm(axis) * axis_home_dir;
-    plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate/60, active_extruder);
-    st_synchronize();
-
-    destination[axis] = 2*home_retract_mm(axis) * axis_home_dir;
-#ifdef DELTA
-    feedrate = homing_feedrate[axis]/10;
-#else
-    feedrate = homing_feedrate[axis]/2 ;
-#endif
-    plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate/60, active_extruder);
-    st_synchronize();
-#ifdef DELTA
-    // retrace by the amount specified in endstop_adj
-    if (endstop_adj[axis] * axis_home_dir < 0) {
-      plan_set_position(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS]);
-      destination[axis] = endstop_adj[axis];
-      plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate/60, active_extruder);
-      st_synchronize();
-    }
-#endif
-    axis_is_at_home(axis);
-    destination[axis] = current_position[axis];
-    feedrate = 0.0;
-    endstops_hit_on_purpose();
-    axis_known_position[axis] = true;
-
-    // Retract Servo endstop if enabled
-    #ifdef SERVO_ENDSTOPS
-      if (servo_endstops[axis] > -1) {
-        servos[servo_endstops[axis]].write(servo_endstop_angles[axis * 2 + 1]);
-      }
-    #endif
-#if defined (ENABLE_AUTO_BED_LEVELING) && (PROBE_SERVO_DEACTIVATION_DELAY > 0)
-    if (axis==Z_AXIS) retract_z_probe();
-#endif
-    
-  }
-}
-*/
-#define HOMEAXIS(LETTER) homeaxis(LETTER##_AXIS)
 
 /***********************************/
 //int parse(char *line, line *l);
@@ -453,7 +377,216 @@ bool get_command()
   return false;
 }
 
-//#define HOMEAXIS(LETTER) homeaxis(LETTER##_AXIS)
+static void axis_is_at_home(int axis) {
+  current_position[axis] = base_home_pos(axis) + add_homeing[axis];
+  min_pos[axis] =          base_min_pos[axis] + add_homeing[axis];
+  max_pos[axis] =          base_max_pos[axis] + add_homeing[axis];
+}
+
+#define HOMEAXIS(LETTER) homeaxis(LETTER##_AXIS)
+
+static void homeaxis(int axis) {
+#define HOMEAXIS_DO(LETTER) \
+  ((LETTER##_MIN_PIN > -1 && LETTER##_HOME_DIR==-1) || (LETTER##_MAX_PIN > -1 && LETTER##_HOME_DIR==1))
+
+  if (axis==X_AXIS ? HOMEAXIS_DO(X) :
+      axis==Y_AXIS ? HOMEAXIS_DO(Y) :
+      axis==Z_AXIS ? HOMEAXIS_DO(Z) :
+      0) {
+    int axis_home_dir = home_dir(axis);
+
+    current_position[axis] = 0;
+    plan_set_position(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS]);
+	
+
+    // Engage Servo endstop if enabled
+    #ifdef SERVO_ENDSTOPS
+      #if defined (ENABLE_AUTO_BED_LEVELING) && (PROBE_SERVO_DEACTIVATION_DELAY > 0)
+        if (axis==Z_AXIS) {
+          engage_z_probe();
+        }
+	    else
+      #endif
+      if (servo_endstops[axis] > -1) {
+        servos[servo_endstops[axis]].write(servo_endstop_angles[axis * 2]);
+      }
+    #endif
+
+    destination[axis] = 1.5 * max_length(axis) * axis_home_dir;
+    feedrate = homing_feedrate[axis];
+    plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate/60, active_extruder);
+    st_synchronize();
+
+    current_position[axis] = 0;
+    plan_set_position(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS]);
+    destination[axis] = -home_retract_mm(axis) * axis_home_dir;
+    plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate/60, active_extruder);
+    st_synchronize();
+
+    destination[axis] = 2*home_retract_mm(axis) * axis_home_dir;
+#ifdef DELTA
+    feedrate = homing_feedrate[axis]/10;
+#else
+    feedrate = homing_feedrate[axis]/2 ;
+#endif
+    plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate/60, active_extruder);
+    st_synchronize();
+#ifdef DELTA
+    // retrace by the amount specified in endstop_adj
+    if (endstop_adj[axis] * axis_home_dir < 0) {
+      plan_set_position(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS]);
+      destination[axis] = endstop_adj[axis];
+      plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate/60, active_extruder);
+      st_synchronize();
+    }
+#endif
+    axis_is_at_home(axis);
+    destination[axis] = current_position[axis];
+    feedrate = 0.0;
+    endstops_hit_on_purpose();
+    axis_known_position[axis] = true;
+
+    // Retract Servo endstop if enabled
+    #ifdef SERVO_ENDSTOPS
+      if (servo_endstops[axis] > -1) {
+        servos[servo_endstops[axis]].write(servo_endstop_angles[axis * 2 + 1]);
+      }
+    #endif
+#if defined (ENABLE_AUTO_BED_LEVELING) && (PROBE_SERVO_DEACTIVATION_DELAY > 0)
+    if (axis==Z_AXIS) retract_z_probe();
+#endif
+    
+  }
+}
+void homing()
+{
+  int8_t i;
+#ifdef ENABLE_AUTO_BED_LEVELING
+  //TODO
+  //plan_bed_level_matrix.set_to_identity();  //Reset the plane ("erase" all leveling data)
+#endif //ENABLE_AUTO_BED_LEVELING
+
+
+  saved_feedrate = feedrate;
+  saved_feedmultiply = feedmultiply;
+  feedmultiply = 100;
+  previous_millis_cmd = millis();
+
+  enable_endstops(true);
+
+  for(i=0; i < NUM_AXIS; i++) {
+    destination[i] = current_position[i];
+  }
+  feedrate = 0.0;
+
+
+  home_all_axis = !((code_seen(axis_codes[0])) || (code_seen(axis_codes[1])) || (code_seen(axis_codes[2])));
+
+  if((home_all_axis) || (code_seen(axis_codes[X_AXIS])))
+  {
+    HOMEAXIS(X);
+  }
+
+  if((home_all_axis) || (code_seen(axis_codes[Y_AXIS]))) {
+    HOMEAXIS(Y);
+  }
+
+  if(code_seen(axis_codes[X_AXIS]))
+  {
+    if(code_value_long() != 0) {
+      current_position[X_AXIS]=code_value()+add_homeing[0];
+    }
+  }
+
+  if(code_seen(axis_codes[Y_AXIS])) {
+    if(code_value_long() != 0) {
+      current_position[Y_AXIS]=code_value()+add_homeing[1];
+    }
+  }
+  
+  #ifndef Z_SAFE_HOMING
+  if((home_all_axis) || (code_seen(axis_codes[Z_AXIS]))) {
+  #if defined (Z_RAISE_BEFORE_HOMING) && (Z_RAISE_BEFORE_HOMING > 0)
+    // Set destination away from bed
+    destination[Z_AXIS] = Z_RAISE_BEFORE_HOMING * home_dir(Z_AXIS) * (-1);   
+    feedrate = max_feedrate[Z_AXIS];
+    plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS],
+        destination[E_AXIS], feedrate, active_extruder);
+    st_synchronize();
+  #endif
+    HOMEAXIS(Z);
+  }
+  #else                      // Z Safe mode activated. 
+  if(home_all_axis) {
+    destination[X_AXIS] = round(Z_SAFE_HOMING_X_POINT - bed_level_probe_offset[0]);
+    destination[Y_AXIS] = round(Z_SAFE_HOMING_Y_POINT - bed_level_probe_offset[1]);
+    // Set destination away from bed
+    destination[Z_AXIS] = Z_RAISE_BEFORE_HOMING * home_dir(Z_AXIS) * (-1);  
+    feedrate = XY_TRAVEL_SPEED;
+    current_position[Z_AXIS] = 0;
+	
+    plan_set_position(current_position[X_AXIS], current_position[Y_AXIS],
+        current_position[Z_AXIS], current_position[E_AXIS]);
+    plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS],
+        destination[E_AXIS], feedrate, active_extruder);
+    st_synchronize();
+    current_position[X_AXIS] = destination[X_AXIS];
+    current_position[Y_AXIS] = destination[Y_AXIS];
+    HOMEAXIS(Z);
+  }
+  // Let's see if X and Y are homed and probe is inside bed area.
+  if(code_seen(axis_codes[Z_AXIS])) {
+    if ( (axis_known_position[X_AXIS]) && (axis_known_position[Y_AXIS]) \
+      && (current_position[X_AXIS]+bed_level_probe_offset[0] >= min_pos[0]) \
+      && (current_position[X_AXIS]+bed_level_probe_offset[0] <= max_pos[0]) \
+      && (current_position[Y_AXIS]+bed_level_probe_offset[1] >= min_pos[1]) \
+      && (current_position[Y_AXIS]+bed_level_probe_offset[1] <= max_pos[1])) {
+
+      current_position[Z_AXIS] = 0;
+      plan_set_position(current_position[X_AXIS], current_position[Y_AXIS],
+          current_position[Z_AXIS], current_position[E_AXIS]);			  
+      // Set destination away from bed
+      destination[Z_AXIS] = Z_RAISE_BEFORE_HOMING * home_dir(Z_AXIS) * (-1);   
+      feedrate = max_feedrate[Z_AXIS];
+      plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS],
+          destination[E_AXIS], feedrate, active_extruder);
+      st_synchronize();
+      HOMEAXIS(Z);
+    } else if (!((axis_known_position[X_AXIS]) && (axis_known_position[Y_AXIS]))) {
+      //TODO
+      //LCD_MESSAGEPGM(MSG_POSITION_UNKNOWN);
+      //SERIAL_ECHO_START;
+      //SERIAL_ECHOLNPGM(MSG_POSITION_UNKNOWN);
+    } else {
+      //TODO
+      //LCD_MESSAGEPGM(MSG_ZPROBE_OUT);
+      //SERIAL_ECHO_START;
+      //SERIAL_ECHOLNPGM(MSG_ZPROBE_OUT);
+      }
+    }
+  #endif
+
+  if(code_seen(axis_codes[Z_AXIS])) {
+    if(code_value_long() != 0) {
+      current_position[Z_AXIS]=code_value()+add_homeing[2];
+    }
+  }
+  #ifdef ENABLE_AUTO_BED_LEVELING
+  if((home_all_axis) || (code_seen(axis_codes[Z_AXIS]))) {
+    current_position[Z_AXIS] += -bed_level_probe_offset[2];  //Add Z_Probe offset (the distance is negative)
+  }
+  #endif
+  plan_set_position(current_position[X_AXIS], current_position[Y_AXIS],
+      current_position[Z_AXIS], current_position[E_AXIS]);
+  #ifdef ENDSTOPS_ONLY_FOR_HOMING
+  enable_endstops(false);
+  #endif
+
+  feedrate = saved_feedrate;
+  feedmultiply = saved_feedmultiply;
+  previous_millis_cmd = millis();
+  endstops_hit_on_purpose();
+}
 
 void process_commands()
 {
@@ -476,31 +609,9 @@ void process_commands()
         return;
       }
       //break;
-    }
-/*
     case 28: //G28 Home all Axis one at a time
-#ifdef ENABLE_AUTO_BED_LEVELING
-      //Reset the plane ("erase" all leveling data)
-      matrix_3x3_set_to_identity(&plan_bed_level_matrix);
-#endif //ENABLE_AUTO_BED_LEVELING
-      saved_feedrate = feedrate;
-      saved_feedmultiply = feedmultiply;
-      feedmultiply = 100;
-      previous_millis_cmd = millis();
-
-      enable_endstops(true);
-
-      for(char i=0; i < NUM_AXIS; i++) {
-        destination[i] = current_position[i];
-      }
-      feedrate = 0.0;
-
-      home_all_axis = !((code_seen(axis_codes[0])) || (code_seen(axis_codes[1])) || (code_seen(axis_codes[2])));
-
-      if((home_all_axis) || (code_seen(axis_codes[X_AXIS])))
-        HOMEAXIS(X);
-      TODO
-*/
+      homing();
+    }
   }
 }
 
