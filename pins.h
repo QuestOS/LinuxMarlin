@@ -1503,7 +1503,7 @@
   http://www.pjrc.com/teensy/teensyduino.html
 * See http://reprap.org/wiki/Printrboard for more info
 ****************************************************************************************/
-#if MOTHERBOARD == 8 || MOTHERBOARD == 81 || MOTHERBOARD == 84
+#if MOTHERBOARD == 8 || MOTHERBOARD == 81 || MOTHERBOARD == 84 /* TOM: MinnowBoard */
 #define KNOWN_BOARD 1
 #define AT90USB 1286  // Disable MarlinSerial etc.
 
@@ -1528,7 +1528,7 @@
 
 #define Z_STEP_PIN          18
 #define Z_DIR_PIN           20
-#define Z_ENABLE_PIN        22
+#define Z_ENABLE_PIN        11
 
 #define E0_STEP_PIN         17
 #define E0_DIR_PIN          19
