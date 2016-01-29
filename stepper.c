@@ -745,32 +745,20 @@ void st_init()
 
   ENABLE_STEPPER_DRIVER_INTERRUPT();
 
-  #ifdef ADVANCE
-  #if defined(TCCR0A) && defined(WGM01)
-    TCCR0A &= ~(1<<WGM01);
-    TCCR0A &= ~(1<<WGM00);
-  #endif
-    e_steps[0] = 0;
-    e_steps[1] = 0;
-    e_steps[2] = 0;
-    TIMSK0 |= (1<<OCIE0A);
-  #endif //ADVANCE
-
   enable_endstops(true); // Start with endstops active. After homing they can be disabled
   sei();
 }
 
-
 // Block until all buffered steps are executed
-/*
 void st_synchronize()
 {
-    while( blocks_queued()) {
+  while( blocks_queued()) {
+    //TODO
     //manage_heater();
-    manage_inactivity();
+    //manage_inactivity();
+    //lcd_update();
   }
 }
-*/
 
 void st_set_position(const long x, const long y, const long z, const long e)
 {

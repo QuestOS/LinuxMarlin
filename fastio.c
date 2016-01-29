@@ -18,7 +18,7 @@ static const char minnowmax_pin_assignment[NGPIO+1][10] = {
 	"SPI_MOSI", "X_ENABLE", "Z_ENABLE", "Y_STEP",
 	"I2C_SCL", "Y_DIR", "I2C_SDA", "Y_ENABLE",
 	"E0_STEP", "Z_STEP", "E0_DIR", "Z_DIR",
-	"X_STOP", "UNUSED", "Y_STOP", "PWM1",
+	"X_STOP", "UNUSED", "Y_STOP", "FAN",
 	"Z_STOP", "E0_ENABLE",
 };
 
@@ -59,7 +59,7 @@ void SET_INPUT(unsigned IO)
 
 void WRITE(unsigned IO, int v)
 {
-	DEBUG_PRINT("writing to pin %s\n", gpio_cxt[IO].pin_name);
+	//DEBUG_PRINT("writing to pin %s\n", gpio_cxt[IO].pin_name);
 
 	if (!gpio_cxt[IO].mraa_cxt) {
 		errExit("write to uninitialized gpio");

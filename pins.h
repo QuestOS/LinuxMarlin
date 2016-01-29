@@ -1551,7 +1551,7 @@
 #if defined(FAN_SOFT_PWM) || defined(FAST_PWM_FAN)
 	#define FAN_PIN        22  // Fan
 #else
-	#define FAN_PIN        16  // Fan
+	#define FAN_PIN        24  // Fan
 #endif
 
 #if MOTHERBOARD == 8  // Teensylu
