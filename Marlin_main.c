@@ -358,6 +358,7 @@ int setup(char *path)
 
   //init board specific data
   DEBUG_PRINT("initializing board specific data\n");
+  mraa_init();
   minnowmax_gpio_init();
 
   //init stepper
