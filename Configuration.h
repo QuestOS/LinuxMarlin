@@ -16,7 +16,7 @@
 // startup. Implementation of an idea by Prof Braino to inform user that any changes made to this
 // build by the user have been successfully uploaded into firmware.
 #define STRING_VERSION_CONFIG_H __DATE__ " " __TIME__ // build date and time
-#define STRING_CONFIG_H_AUTHOR "(lwalkera, Printrbot firmware)" // Who made the changes.
+#define STRING_CONFIG_H_AUTHOR "(j-laird, Printrbot firmware)" // Who made the changes.
 
 // SERIAL_PORT selects which serial port should be used for communication with the host.
 // This allows the connection of wireless adapters (for instance) to non-default port pins.
@@ -82,7 +82,7 @@
 // #define MACHINE_UUID "00000000-0000-0000-0000-000000000000"
 
 // This defines the number of extruders
-#define EXTRUDERS 1
+#define EXTRUDERS 3
 
 //// The following define selects which power supply you have. Please choose the one that matches your setup
 // 1 = ATX
@@ -125,7 +125,7 @@
 #define TEMP_SENSOR_0 1
 #define TEMP_SENSOR_1 1
 #define TEMP_SENSOR_2 1
-#define TEMP_SENSOR_BED 1
+#define TEMP_SENSOR_BED 7
 
 // This makes temp sensor 1 a redundant sensor for sensor 0. If the temperatures difference between these sensors is to high the print will be aborted.
 //#define TEMP_SENSOR_1_AS_REDUNDANT
@@ -228,10 +228,10 @@
 
 //this prevents dangerous Extruder moves, i.e. if the temperature is under the limit
 //can be software-disabled for whatever purposes by
-
-//XXX: used to be define. Commented out by TOM
+//XXX
 //#define PREVENT_DANGEROUS_EXTRUDE
 //if PREVENT_DANGEROUS_EXTRUDE is on, you can still disable (uncomment) very long bits of extrusion separately.
+//XXX
 //#define PREVENT_LENGTHY_EXTRUDE
 
 #define EXTRUDE_MINTEMP 170
@@ -310,11 +310,11 @@ static const bool Z_MAX_ENDSTOP_INVERTING = false; // set to true to invert the 
 #define max_software_endstops true  // If true, axis won't move to coordinates greater than the defined lengths below.
 
 // Travel limits after homing
-#define X_MAX_POS_DEFAULT 205
+#define X_MAX_POS_DEFAULT 100
 #define X_MIN_POS_DEFAULT 0
-#define Y_MAX_POS_DEFAULT 205
+#define Y_MAX_POS_DEFAULT 100
 #define Y_MIN_POS_DEFAULT 0
-#define Z_MAX_POS_DEFAULT 200
+#define Z_MAX_POS_DEFAULT 100
 #define Z_MIN_POS_DEFAULT 0
 
 #define X_MAX_LENGTH (base_max_pos[0] - base_min_pos[0])
@@ -326,16 +326,17 @@ static const bool Z_MAX_ENDSTOP_INVERTING = false; // set to true to invert the 
 
 #ifdef ENABLE_AUTO_BED_LEVELING
 
-  // these are the positions on the bed to do the probing
-  #define LEFT_PROBE_BED_POSITION 10
-  #define RIGHT_PROBE_BED_POSITION X_MAX_LENGTH-10
-  #define BACK_PROBE_BED_POSITION Y_MAX_LENGTH-10
-  #define FRONT_PROBE_BED_POSITION 10
+  // these are the positions on the bed to do the probing. 
+  // NOTE: if the absolute value of the probe offset (x,y directions) is > 10, we have to move probe points inboard on that axis.
+  #define LEFT_PROBE_BED_POSITION (bed_level_probe_offset[0] <= 10 ? 10 : bed_level_probe_offset[0])
+  #define RIGHT_PROBE_BED_POSITION (bed_level_probe_offset[0] >= -10 ? X_MAX_LENGTH - 10 : X_MAX_LENGTH + bed_level_probe_offset[0])
+  #define BACK_PROBE_BED_POSITION (bed_level_probe_offset[1] >= -10 ? Y_MAX_LENGTH - 10 : Y_MAX_LENGTH + bed_level_probe_offset[1]) 
+  #define FRONT_PROBE_BED_POSITION (bed_level_probe_offset[1] <= 10 ? 10 : bed_level_probe_offset[1])
 
-  // these are the offsets to the prob relative to the extruder tip (Hotend - Probe)
-  #define X_PROBE_OFFSET_FROM_EXTRUDER_DEFAULT 5
+  // these are the offsets to the prob relative to the extruder tip (Hotend - Probe).  Default below prevents Metal Plus from probing off-bed.
+  #define X_PROBE_OFFSET_FROM_EXTRUDER_DEFAULT 20
   #define Y_PROBE_OFFSET_FROM_EXTRUDER_DEFAULT 0
-  #define Z_PROBE_OFFSET_FROM_EXTRUDER_DEFAULT -4
+  #define Z_PROBE_OFFSET_FROM_EXTRUDER_DEFAULT 0
 
   #define Z_RAISE_BEFORE_HOMING 4       // (in mm) Raise Z before homing (G28) for Probe Clearance.
                                         // Be sure you have this distance over your Z_MAX_POS in case
@@ -399,7 +400,7 @@ static const bool Z_MAX_ENDSTOP_INVERTING = false; // set to true to invert the 
 // default settings
 
 #define DEFAULT_AXIS_STEPS_PER_UNIT   {80,80,2020,96}
-#define DEFAULT_MAX_FEEDRATE          {100, 100, 2, 14}    // (mm/sec)    
+#define DEFAULT_MAX_FEEDRATE          {125, 125, 5, 14}    // (mm/sec)    
 #define DEFAULT_MAX_ACCELERATION      {2000,2000,30,10000}    // X, Y, Z, E maximum start speed for accelerated moves. E default values are good for skeinforge 40+, for older versions raise them a lot.
 
 #define DEFAULT_ACCELERATION          3000    // X, Y, Z and E max acceleration in mm/s^2 for printing moves
@@ -426,10 +427,8 @@ static const bool Z_MAX_ENDSTOP_INVERTING = false; // set to true to invert the 
 // M501 - reads parameters from EEPROM (if you need reset them after you changed them temporarily).
 // M502 - reverts to the default "factory settings".  You still need to store them in EEPROM afterwards if you want to.
 //define this to enable eeprom support
-
-//XXX: used to be defined. Commented out by Tom
-//#define EEPROM_SETTINGS
-
+//XXX
+#define EEPROM_SETTINGS
 //to disable EEPROM Serial responses and decrease program space by ~1700 byte: comment this out:
 // please keep turned on if you can.
 #define EEPROM_CHITCHAT
@@ -445,12 +444,15 @@ static const bool Z_MAX_ENDSTOP_INVERTING = false; // set to true to invert the 
 #define ABS_PREHEAT_FAN_SPEED 255   // Insert Value between 0 and 255
 
 //LCD and SD support
+//XXX
 //#define ULTRA_LCD  //general lcd support, also 16x2
 //#define DOGLCD  // Support for SPI LCD 128x64 (Controller ST7565R graphic Display Family)
+//XXX
 //#define SDSUPPORT // Enable SD Card Support in Hardware Console
 //#define SDSLOW // Use slower SD transfer mode (not normally needed - uncomment if you're getting volume init error)
 //#define ENCODER_PULSES_PER_STEP 1 // Increase if you have a high resolution encoder
 //#define ENCODER_STEPS_PER_MENU_ITEM 5 // Set according to ENCODER_PULSES_PER_STEP or your liking
+//XXX
 //#define NEWPANEL
 
 //Uncomment the lines below to save program flash space
@@ -458,8 +460,7 @@ static const bool Z_MAX_ENDSTOP_INVERTING = false; // set to true to invert the 
 #define DISABLE_PREHEAT_MENU
 
 //#define ULTIMAKERCONTROLLER //as available from the ultimaker online store.
-
-//XXX: used to be define. Commented out by TOM. We don't need a panel...
+//XXX
 //#define ULTIPANEL  //the ultipanel as on thingiverse
 
 // The MaKr3d Makr-Panel with graphic controller and SD support
@@ -658,6 +659,6 @@ static const bool Z_MAX_ENDSTOP_INVERTING = false; // set to true to invert the 
 //#define SERVO_ENDSTOP_ANGLES {0,0, 0,0, 70,0} // X,Y,Z Axis Extend and Retract angles
 
 #include "Configuration_adv.h"
-//#include "thermistortables.h"
+#include "thermistortables.h"
 
 #endif //__CONFIGURATION_H

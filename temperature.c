@@ -31,7 +31,6 @@
 
 #include "Marlin.h"
 #include "temperature.h"
-#include "watchdog.h"
 
 //===========================================================================
 //=============================public variables============================
@@ -608,7 +607,7 @@ static float analog2temp(int raw, uint8_t e) {
       SERIAL_ERROR_START;
       SERIAL_ERROR((int)e);
       SERIAL_ERRORLNPGM(" - Invalid extruder number !");
-      kill();
+      ikill();
   } 
   #ifdef HEATER_0_USES_MAX6675
     if (e == 0)
@@ -686,8 +685,6 @@ static void updateTemperaturesFromRawValues()
     #ifdef TEMP_SENSOR_1_AS_REDUNDANT
       redundant_temperature = analog2temp(redundant_temperature_raw, 1);
     #endif
-    //Reset the watchdog after we know we have a temperature measurement.
-    watchdog_reset();
 
     CRITICAL_SECTION_START;
     temp_meas_ready = false;
@@ -1325,4 +1322,4 @@ float unscalePID_d(float d)
 #endif //PIDTEMP
 
 
-
+/* vi: set et sw=2 sts=2: */

@@ -33,6 +33,8 @@
 #define SERIAL_PROTOCOLPGM(x) printf("%s\n", x)
 #define SERIAL_PROTOCOLLN(x) printf("%s\n", x)
 #define SERIAL_PROTOCOLLNPGM(x) printf("%s\n", x)
+#define SERIAL_ERROR_START 
+#define SERIAL_ERRORLNPGM(x) printf("%s\n", x)
 
 #define errExit(msg) 	do { perror(msg); exit(EXIT_FAILURE); \
 										 	} while (0)

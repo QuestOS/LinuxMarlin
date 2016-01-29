@@ -308,8 +308,8 @@ void loop(int fd)
 
     //check heater every n milliseconds
     //TODO
-    //manage_heater();
-    //manage_inactivity();
+    manage_heater();
+    manage_inactivity();
     //checkHitEndstops();
   }
 }
