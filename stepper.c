@@ -310,9 +310,6 @@ FORCE_INLINE void trapezoid_generator_reset() {
   acc_step_rate = current_block->initial_rate;
   acceleration_time = calc_timer(acc_step_rate);
   //OCR1A = acceleration_time;
-  //its.it_value.tv_nsec = 500 * acceleration_time;
-  //if (timer_settime(timerid, 0, &its, NULL) == -1)
-    //errExit("timer_settime");
   set_time(500 * acceleration_time);
 
 //    SERIAL_ECHO_START;
@@ -361,9 +358,7 @@ handler(int sig, siginfo_t *si, void *uc)
         //OCR1A=2000; // 1kHz.
         // 1kHz
         //DEBUG_PRINT("no move\n");
-        its.it_value.tv_nsec = 500 * 2000; //1ms
-        if (timer_settime(timerid, 0, &its, NULL) == -1)
-          errExit("timer_settime");
+        set_time(500 * 2000);
     }
   }
 
@@ -543,9 +538,7 @@ handler(int sig, siginfo_t *si, void *uc)
       // step_rate to timer interval
       timer = calc_timer(acc_step_rate);
       //OCR1A = timer;
-      its.it_value.tv_nsec = 500 * timer;
-      if (timer_settime(timerid, 0, &its, NULL) == -1)
-        errExit("timer_settime");
+      set_time(500 * timer);
       acceleration_time += timer;
     }
     else if (step_events_completed > (unsigned long int)current_block->decelerate_after) {
@@ -565,16 +558,12 @@ handler(int sig, siginfo_t *si, void *uc)
       // step_rate to timer interval
       timer = calc_timer(step_rate);
       //OCR1A = timer;
-      its.it_value.tv_nsec = 500 * timer;
-      if (timer_settime(timerid, 0, &its, NULL) == -1)
-        errExit("timer_settime");
+      set_time(500 * timer);
       deceleration_time += timer;
     }
     else {
       //OCR1A = OCR1A_nominal;
-      its.it_value.tv_nsec = 500 * OCR1A_nominal;
-      if (timer_settime(timerid, 0, &its, NULL) == -1)
-        errExit("timer_settime");
+      set_time(500 * OCR1A_nominal);
       // ensure we're running at the correct step rate, even if we just came off an acceleration
       step_loops = step_loops_nominal;
     }
@@ -720,9 +709,6 @@ void st_init()
 
   /* start the timer */
   memset(&its, 0, sizeof(struct itimerspec));
-  //its.it_value.tv_nsec = 500 * 0x4000;
-  //if (timer_settime(timerid, 0, &its, NULL) == -1)
-  //  errExit("timer_settime");
   set_time(500 * 0x4000);
 
   ENABLE_STEPPER_DRIVER_INTERRUPT();
