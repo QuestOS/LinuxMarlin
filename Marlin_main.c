@@ -385,7 +385,7 @@ static void axis_is_at_home(int axis) {
   max_pos[axis] =          base_max_pos[axis] + add_homeing[axis];
 }
 
-#define HOMEAXIS(LETTER) homeaxis(LETTER##_AXIS)
+#define HOMEAXIS(LETTER) DEBUG_PRINT("Homing %s axis\n", #LETTER); homeaxis(LETTER##_AXIS)
 
 static void homeaxis(int axis) {
 #define HOMEAXIS_DO(LETTER) \
@@ -426,22 +426,10 @@ static void homeaxis(int axis) {
     st_synchronize();
 
     destination[axis] = 2*home_retract_mm(axis) * axis_home_dir;
-#ifdef DELTA
-    feedrate = homing_feedrate[axis]/10;
-#else
     feedrate = homing_feedrate[axis]/2 ;
-#endif
     plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate/60, active_extruder);
     st_synchronize();
-#ifdef DELTA
-    // retrace by the amount specified in endstop_adj
-    if (endstop_adj[axis] * axis_home_dir < 0) {
-      plan_set_position(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS]);
-      destination[axis] = endstop_adj[axis];
-      plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate/60, active_extruder);
-      st_synchronize();
-    }
-#endif
+
     axis_is_at_home(axis);
     destination[axis] = current_position[axis];
     feedrate = 0.0;
@@ -460,14 +448,15 @@ static void homeaxis(int axis) {
     
   }
 }
+
 void homing()
 {
   int8_t i;
+  DEBUG_PRINT("HOMING...\n");
 #ifdef ENABLE_AUTO_BED_LEVELING
   //TODO
   //plan_bed_level_matrix.set_to_identity();  //Reset the plane ("erase" all leveling data)
 #endif //ENABLE_AUTO_BED_LEVELING
-
 
   saved_feedrate = feedrate;
   saved_feedmultiply = feedmultiply;
@@ -613,6 +602,7 @@ void process_commands()
       //break;
     case 28: //G28 Home all Axis one at a time
       homing();
+      return;
     }
   }
 }

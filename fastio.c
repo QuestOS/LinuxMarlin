@@ -14,7 +14,7 @@ static const int minnowmax_pin_mapping[NGPIO+1] = {
 
 static const char minnowmax_pin_assignment[NGPIO+1][10] = {
 	"NONEXIST", "GND", "GND", "+5V", "+3V",
-	"SPI_CS", "X_STEP", "SPI_MISO", "X_DIR",
+	"HEATER", "X_STEP", "SPI_MISO", "X_DIR",
 	"SPI_MOSI", "X_ENABLE", "Z_ENABLE", "Y_STEP",
 	"I2C_SCL", "Y_DIR", "I2C_SDA", "Y_ENABLE",
 	"E0_STEP", "Z_STEP", "E0_DIR", "Z_DIR",
