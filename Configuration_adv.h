@@ -92,8 +92,8 @@
 #define ENDSTOPS_ONLY_FOR_HOMING // If defined the endstops will only be used for homing
 
 
-// AUTOSET LOCATIONS OF LIMIT SWITCHES
-// Added by ZetaPhoenix 09-15-2012
+//// AUTOSET LOCATIONS OF LIMIT SWITCHES
+//// Added by ZetaPhoenix 09-15-2012
 #ifdef MANUAL_HOME_POSITIONS  // Use manual limit switch locations
   #define X_HOME_POS MANUAL_X_HOME_POS
   #define Y_HOME_POS MANUAL_Y_HOME_POS

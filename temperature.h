@@ -27,6 +27,9 @@
   #include "stepper.h"
 #endif
 
+#undef FORCE_INLINE
+#define FORCE_INLINE static __attribute__((always_inline)) inline
+
 // public functions
 void tp_init();  //initialise the heating
 void manage_heater(); //it is critical that this is called periodically.

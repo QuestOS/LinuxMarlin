@@ -122,3 +122,18 @@ void analogWrite(int pin, int val)
   }
   mraa_pwm_write(pwm_cxt, (float)val / (float)255);
 }
+
+void delay(unsigned long time)
+{
+  unsigned long start = millis();
+  while (millis() - start < time) ;
+}
+
+float constrain(float x, float a, float b)
+{
+  if (x >= a && x <= b) return x;
+  else if (x < a) return a;
+  else return b;
+}
+
+/* vi: set et sw=2 sts=2: */

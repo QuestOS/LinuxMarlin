@@ -31,8 +31,12 @@
 #define SERIAL_PROTOCOL(x) printf("%s\n", x)
 #define SERIAL_PROTOCOL_F(x,y) printf("%f\n", x)
 #define SERIAL_PROTOCOLPGM(x) printf("%s\n", x)
-#define SERIAL_PROTOCOLLN(x) printf("%s\n", x)
+#define SERIAL_PROTOCOLLN(x) printf("%x\n", x)
 #define SERIAL_PROTOCOLLNPGM(x) printf("%s\n", x)
+#define SERIAL_ERROR_START 
+#define SERIAL_ERROR(x) printf("%s\n", x)
+#define SERIAL_ERRORLN(x) printf("%x\n", x)
+#define SERIAL_ERRORLNPGM(x) printf("%s\n", x)
 
 #define errExit(msg) 	do { perror(msg); exit(EXIT_FAILURE); \
 										 	} while (0)
@@ -71,6 +75,8 @@ void prepare_move();
 void clamp_to_software_endstops(float target[3]);
 void ikill();
 void manage_inactivity();
+bool IsStopped();
+void Stop();
 
 sigset_t global_interrupt, old_global_interrupt;
 extern inline void cli();
