@@ -31,11 +31,12 @@
 #include "Configuration.h"
 #include "ConfigurationStore.h"
 #include "Arduino.h"
+#include "temperature.h"
 #include "planner.h"
 #include "stepper.h"
+#include "language.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/sysinfo.h>
 
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -222,7 +223,6 @@ XYZ_CONSTS_FROM_CONFIG(float, home_retract_mm, HOME_RETRACT_MM);
 XYZ_CONSTS_FROM_CONFIG(signed char, home_dir,  HOME_DIR);
 
 /***********************************/
-//int parse(char *line, line *l);
 
 int main(int argc, char *argv[]) {
 
@@ -311,6 +311,20 @@ void loop(int fd)
     manage_heater();
     manage_inactivity();
     //checkHitEndstops();
+  }
+}
+
+bool IsStopped() { return Stopped; };
+
+void Stop()
+{
+  disable_heater();
+  if(Stopped == false) {
+    Stopped = true;
+    Stopped_gcode_LastN = gcode_LastN; // Save last g_code for restart
+    SERIAL_ERROR_START;
+    SERIAL_ERRORLNPGM(MSG_ERR_STOPPED);
+    //LCD_MESSAGEPGM(MSG_STOPPED);
   }
 }
 

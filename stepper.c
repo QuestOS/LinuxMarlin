@@ -29,7 +29,6 @@
 //#include "temperature.h"
 #include "language.h"
 #include "speed_lookuptable.h"
-#include "avr.h"
 #include <mraa.h>
 #include "fastio.h"
 //#include "DAC.h"
@@ -710,7 +709,7 @@ void st_init()
   sa.sa_sigaction = handler;
   sigemptyset(&sa.sa_mask);
   if (sigaction(SIGALRM, &sa, NULL) == -1)
- 	errExit("sigaction");
+    errExit("sigaction");
 
   /* block timer signal temporarily */
   sigemptyset(&mask);
@@ -727,7 +726,7 @@ void st_init()
 
   DEBUG_PRINT("timer ID is 0x%lx\n", (long) timerid);
 
-  /* start the timer */
+  /* start the one-shot timer */
   memset(&its, 0, sizeof(struct itimerspec));
   its.it_value.tv_nsec = 500 * 0x4000;
   if (timer_settime(timerid, 0, &its, NULL) == -1)

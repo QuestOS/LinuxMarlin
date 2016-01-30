@@ -28,13 +28,20 @@
 
  */
 
-
+#include <signal.h>
+#include <time.h>
 #include "Marlin.h"
 #include "temperature.h"
+#include "thermistortables.h"
+#include "Arduino.h"
 
 //===========================================================================
 //=============================public variables============================
 //===========================================================================
+static timer_t timerid;
+static struct itimerspec its;
+static sigset_t mask;
+
 int target_temperature[EXTRUDERS] = { 0 };
 int target_temperature_bed = 0;
 int current_temperature_raw[EXTRUDERS] = { 0 };
@@ -159,6 +166,7 @@ unsigned long watchmillis[EXTRUDERS] = ARRAY_BY_EXTRUDERS(0,0,0);
 //===========================================================================
 //=============================   functions      ============================
 //===========================================================================
+static void handler(int sig, siginfo_t *si, void *uc);
 
 void PID_autotune(float temp, int extruder, int ncycles)
 {
@@ -307,7 +315,7 @@ void PID_autotune(float temp, int extruder, int ncycles)
       SERIAL_PROTOCOLLNPGM("PID Autotune finished! Put the Kp, Ki and Kd constants into Configuration.h");
       return;
     }
-    lcd_update();
+    //lcd_update();
   }
 }
 
@@ -498,7 +506,7 @@ void manage_heater()
         if(IsStopped() == false) {
           SERIAL_ERROR_START;
           SERIAL_ERRORLNPGM("Extruder switched off. Temperature difference between temp sensors is too high !");
-          LCD_ALERTMESSAGEPGM("Err: REDUNDANT TEMP ERROR");
+          //LCD_ALERTMESSAGEPGM("Err: REDUNDANT TEMP ERROR");
         }
         #ifndef BOGUS_TEMPERATURE_FAILSAFE_OVERRIDE
           Stop();
@@ -594,7 +602,6 @@ void manage_heater()
   #endif
 }
 
-#define PGM_RD_W(x)   (short)pgm_read_word(&x)
 // Derived from RepRap FiveD extruder::getTemperature()
 // For hot end temperature measurement.
 static float analog2temp(int raw, uint8_t e) {
@@ -624,18 +631,18 @@ static float analog2temp(int raw, uint8_t e) {
 
     for (i=1; i<heater_ttbllen_map[e]; i++)
     {
-      if (PGM_RD_W((*tt)[i][0]) > raw)
+      if ((*tt)[i][0] > raw)
       {
-        celsius = PGM_RD_W((*tt)[i-1][1]) + 
-          (raw - PGM_RD_W((*tt)[i-1][0])) * 
-          (float)(PGM_RD_W((*tt)[i][1]) - PGM_RD_W((*tt)[i-1][1])) /
-          (float)(PGM_RD_W((*tt)[i][0]) - PGM_RD_W((*tt)[i-1][0]));
+        celsius = (*tt)[i-1][1] + 
+          (raw - (*tt)[i-1][0]) * 
+          (float)((*tt)[i][1] - (*tt)[i-1][1]) /
+          (float)((*tt)[i][0] - (*tt)[i-1][0]);
         break;
       }
     }
 
     // Overflow: Set to last value in the table
-    if (i == heater_ttbllen_map[e]) celsius = PGM_RD_W((*tt)[i-1][1]);
+    if (i == heater_ttbllen_map[e]) celsius = (*tt)[i-1][1];
 
     return celsius;
   }
@@ -651,18 +658,18 @@ static float analog2tempBed(int raw) {
 
     for (i=1; i<BEDTEMPTABLE_LEN; i++)
     {
-      if (PGM_RD_W(BEDTEMPTABLE[i][0]) > raw)
+      if (BEDTEMPTABLE[i][0] > raw)
       {
-        celsius  = PGM_RD_W(BEDTEMPTABLE[i-1][1]) + 
-          (raw - PGM_RD_W(BEDTEMPTABLE[i-1][0])) * 
-          (float)(PGM_RD_W(BEDTEMPTABLE[i][1]) - PGM_RD_W(BEDTEMPTABLE[i-1][1])) /
-          (float)(PGM_RD_W(BEDTEMPTABLE[i][0]) - PGM_RD_W(BEDTEMPTABLE[i-1][0]));
+        celsius  = BEDTEMPTABLE[i-1][1] + 
+          (raw - BEDTEMPTABLE[i-1][0]) * 
+          (float)(BEDTEMPTABLE[i][1] - BEDTEMPTABLE[i-1][1]) /
+          (float)(BEDTEMPTABLE[i][0] - BEDTEMPTABLE[i-1][0]);
         break;
       }
     }
 
     // Overflow: Set to last value in the table
-    if (i == BEDTEMPTABLE_LEN) celsius = PGM_RD_W(BEDTEMPTABLE[i-1][1]);
+    if (i == BEDTEMPTABLE_LEN) celsius = BEDTEMPTABLE[i-1][1];
 
     return celsius;
   #elif defined BED_USES_AD595
@@ -753,8 +760,9 @@ void tp_init()
   #endif
 
   // Set analog inputs
-  ADCSRA = 1<<ADEN | 1<<ADSC | 1<<ADIF | 0x07;
-  DIDR0 = 0;
+  // TODO
+  //ADCSRA = 1<<ADEN | 1<<ADSC | 1<<ADIF | 0x07;
+  //DIDR0 = 0;
   #ifdef DIDR2
     DIDR2 = 0;
   #endif
@@ -767,14 +775,16 @@ void tp_init()
   #endif
   #if defined(TEMP_1_PIN) && (TEMP_1_PIN > -1)
     #if TEMP_1_PIN < 8
-       DIDR0 |= 1<<TEMP_1_PIN; 
+       //TODO
+       //DIDR0 |= 1<<TEMP_1_PIN; 
     #else
        DIDR2 |= 1<<(TEMP_1_PIN - 8); 
     #endif
   #endif
   #if defined(TEMP_2_PIN) && (TEMP_2_PIN > -1)
     #if TEMP_2_PIN < 8
-       DIDR0 |= 1 << TEMP_2_PIN; 
+    //TODO
+       //DIDR0 |= 1 << TEMP_2_PIN; 
     #else
        DIDR2 |= 1<<(TEMP_2_PIN - 8); 
     #endif
@@ -788,9 +798,44 @@ void tp_init()
   #endif
   
   // Use timer0 for temperature measurement
-  // Interleave temperature interrupt with millies interrupt
-  OCR0B = 128;
-  TIMSK0 |= (1<<OCIE0B);  
+  // Interleave temperature interrupt with millis interrupt
+  /*OCR0B = 128;
+  TIMSK0 |= (1<<OCIE0B);  */
+
+  //Timer0 is already set up to generate a millisecond (1KHz) interrupt to 
+  //update the millisecond counter reported by millis() in Arduino
+  /* establish handler for timer signal */
+  struct sigaction sa;
+  struct sigevent sev;
+
+  sa.sa_flags = SA_SIGINFO;
+  sa.sa_sigaction = handler;
+  sigemptyset(&sa.sa_mask);
+  if (sigaction(SIGALRM, &sa, NULL) == -1)
+    errExit("sigaction");
+
+  /* block timer signal temporarily */
+  sigemptyset(&mask);
+  sigaddset(&mask, SIGALRM);
+  if (sigprocmask(SIG_SETMASK, &mask, NULL) == -1)
+    errExit("sigprocmask");
+
+  /* create the timer */
+  sev.sigev_notify = SIGEV_SIGNAL;
+  sev.sigev_signo = SIGALRM;
+  sev.sigev_value.sival_ptr = &timerid;
+  if (timer_create(CLOCK_REALTIME, &sev, &timerid) == -1)
+    errExit("timer_create");
+
+  DEBUG_PRINT("timer ID is 0x%lx\n", (long) timerid);
+
+  /* start the periodic timer */
+  memset(&its, 0, sizeof(struct itimerspec));
+  its.it_interval.tv_nsec = 1000000 * 128;
+  if (timer_settime(timerid, 0, &its, NULL) == -1)
+    errExit("timer_settime");
+
+  sigprocmask(SIG_UNBLOCK, &mask, NULL);
   
   // Wait for temperature measurement to settle
   delay(250);
@@ -940,7 +985,7 @@ void max_temp_error(uint8_t e) {
     SERIAL_ERROR_START;
     SERIAL_ERRORLN((int)e);
     SERIAL_ERRORLNPGM(": Extruder switched off. MAXTEMP triggered !");
-    LCD_ALERTMESSAGEPGM("Err: MAXTEMP");
+    //LCD_ALERTMESSAGEPGM("Err: MAXTEMP");
   }
   #ifndef BOGUS_TEMPERATURE_FAILSAFE_OVERRIDE
   Stop();
@@ -953,7 +998,7 @@ void min_temp_error(uint8_t e) {
     SERIAL_ERROR_START;
     SERIAL_ERRORLN((int)e);
     SERIAL_ERRORLNPGM(": Extruder switched off. MINTEMP triggered !");
-    LCD_ALERTMESSAGEPGM("Err: MINTEMP");
+    //LCD_ALERTMESSAGEPGM("Err: MINTEMP");
   }
   #ifndef BOGUS_TEMPERATURE_FAILSAFE_OVERRIDE
   Stop();
@@ -967,7 +1012,7 @@ void bed_max_temp_error(void) {
   if(IsStopped() == false) {
     SERIAL_ERROR_START;
     SERIAL_ERRORLNPGM("Temperature heated bed switched off. MAXTEMP triggered !!");
-    LCD_ALERTMESSAGEPGM("Err: MAXTEMP BED");
+    //LCD_ALERTMESSAGEPGM("Err: MAXTEMP BED");
   }
   #ifndef BOGUS_TEMPERATURE_FAILSAFE_OVERRIDE
   Stop();
@@ -1031,8 +1076,10 @@ int read_max6675()
 #endif
 
 
-// Timer 0 is shared with millies
-ISR(TIMER0_COMPB_vect)
+// Timer 0 is shared with millis
+//ISR(TIMER0_COMPB_vect)
+static void
+handler(int sig, siginfo_t *si, void *uc)
 {
   //these variables are only accesible from the ISR, but static, so they don't lose their value
   static unsigned char temp_count = 0;
@@ -1112,7 +1159,7 @@ ISR(TIMER0_COMPB_vect)
         ADMUX = ((1 << REFS0) | (TEMP_0_PIN & 0x07));
         ADCSRA |= 1<<ADSC; // Start conversion
       #endif
-      lcd_buttons_update();
+      //lcd_buttons_update();
       temp_state = 1;
       break;
     case 1: // Measure TEMP_0
@@ -1134,7 +1181,7 @@ ISR(TIMER0_COMPB_vect)
         ADMUX = ((1 << REFS0) | (TEMP_BED_PIN & 0x07));
         ADCSRA |= 1<<ADSC; // Start conversion
       #endif
-      lcd_buttons_update();
+      //lcd_buttons_update();
       temp_state = 3;
       break;
     case 3: // Measure TEMP_BED
@@ -1148,17 +1195,20 @@ ISR(TIMER0_COMPB_vect)
         #if TEMP_1_PIN > 7
           ADCSRB = 1<<MUX5;
         #else
-          ADCSRB = 0;
+          //TODO
+          //ADCSRB = 0;
         #endif
-        ADMUX = ((1 << REFS0) | (TEMP_1_PIN & 0x07));
-        ADCSRA |= 1<<ADSC; // Start conversion
+        //TODO
+        //ADMUX = ((1 << REFS0) | (TEMP_1_PIN & 0x07));
+        //ADCSRA |= 1<<ADSC; // Start conversion
       #endif
-      lcd_buttons_update();
+      //lcd_buttons_update();
       temp_state = 5;
       break;
     case 5: // Measure TEMP_1
       #if defined(TEMP_1_PIN) && (TEMP_1_PIN > -1)
-        raw_temp_1_value += ADC;
+      //TODO
+        //raw_temp_1_value += ADC;
       #endif
       temp_state = 6;
       break;
@@ -1167,17 +1217,20 @@ ISR(TIMER0_COMPB_vect)
         #if TEMP_2_PIN > 7
           ADCSRB = 1<<MUX5;
         #else
-          ADCSRB = 0;
+        //TODO
+          //ADCSRB = 0;
         #endif
-        ADMUX = ((1 << REFS0) | (TEMP_2_PIN & 0x07));
-        ADCSRA |= 1<<ADSC; // Start conversion
+        //TODO
+        //ADMUX = ((1 << REFS0) | (TEMP_2_PIN & 0x07));
+        //ADCSRA |= 1<<ADSC; // Start conversion
       #endif
-      lcd_buttons_update();
+      //lcd_buttons_update();
       temp_state = 7;
       break;
     case 7: // Measure TEMP_2
       #if defined(TEMP_2_PIN) && (TEMP_2_PIN > -1)
-        raw_temp_2_value += ADC;
+      //TODO
+        //raw_temp_2_value += ADC;
       #endif
       temp_state = 0;
       temp_count++;

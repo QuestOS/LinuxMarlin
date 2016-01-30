@@ -659,6 +659,6 @@ static const bool Z_MAX_ENDSTOP_INVERTING = false; // set to true to invert the 
 //#define SERVO_ENDSTOP_ANGLES {0,0, 0,0, 70,0} // X,Y,Z Axis Extend and Retract angles
 
 #include "Configuration_adv.h"
-#include "thermistortables.h"
+//#include "thermistortables.h"
 
 #endif //__CONFIGURATION_H

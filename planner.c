@@ -530,7 +530,7 @@ void plan_buffer_line(float x, float y, float z, const float e, float feed_rate,
   // Rest here until there is room in the buffer.
   while(block_buffer_tail == next_buffer_head)
   {
-    DEBUG_PRINT("block buffer full\n");
+    //DEBUG_PRINT("block buffer full\n");
     //TODO
     //manage_heater(); 
     manage_inactivity(); 
