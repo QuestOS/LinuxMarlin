@@ -1081,6 +1081,7 @@ int read_max6675()
 static void
 handler(int sig, siginfo_t *si, void *uc)
 {
+  DEBUG_PRINT("temperature handler\n");
   //these variables are only accesible from the ISR, but static, so they don't lose their value
   static unsigned char temp_count = 0;
   static unsigned long raw_temp_0_value = 0;

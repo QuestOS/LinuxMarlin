@@ -352,3 +352,5 @@ void Config_ResetDefault()
 	SERIAL_ECHO_START;
 	SERIAL_ECHOLNPGM("Hardcoded Default Settings Loaded");
 }
+
+/* vi: set et sw=2 sts=2: */

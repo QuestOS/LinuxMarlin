@@ -274,7 +274,7 @@ int setup(char *path)
     exit(-1);
   }
 
-  //tp_init();    // Initialize temperature loop
+  tp_init();    // Initialize temperature loop
   DEBUG_PRINT("initializing planner\n");
   plan_init();  // Initialize planner;
 #ifdef DAC_STEPPER_CURRENT

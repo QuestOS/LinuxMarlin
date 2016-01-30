@@ -27,3 +27,5 @@ void SET_OUTPUT(unsigned IO);
 #define GET_OS_MAPPING(n) (gpio_cxt[n].linux_mapping)
 
 #endif
+
+/* vi: set et sw=2 sts=2: */

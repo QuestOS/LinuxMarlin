@@ -35,7 +35,9 @@ void minnowmax_gpio_init()
 
 void SET_OUTPUT(unsigned IO)
 {
+        DEBUG_PRINT("set output %d: %d\n", IO, GET_OS_MAPPING(IO));
 	DEBUG_PRINT("setting up pin %s\n", gpio_cxt[IO].pin_name);
+        if (IO > NGPIO) return;
 	if (!gpio_cxt[IO].mraa_cxt) {
 		gpio_cxt[IO].mraa_cxt = mraa_gpio_init_raw(GET_OS_MAPPING(IO));
 		if (!gpio_cxt[IO].mraa_cxt) {
@@ -48,6 +50,7 @@ void SET_OUTPUT(unsigned IO)
 void SET_INPUT(unsigned IO)
 {
 	//DEBUG_PRINT("setting up pin %s\n", gpio_cxt[IO].pin_name);
+        if (IO > NGPIO) return;
 	if (!gpio_cxt[IO].mraa_cxt) {
 		gpio_cxt[IO].mraa_cxt = mraa_gpio_init_raw(GET_OS_MAPPING(IO));
 		if (!gpio_cxt[IO].mraa_cxt) {
@@ -60,7 +63,7 @@ void SET_INPUT(unsigned IO)
 void WRITE(unsigned IO, int v)
 {
 	//DEBUG_PRINT("writing to pin %s\n", gpio_cxt[IO].pin_name);
-
+        if (IO > NGPIO) return;
 	if (!gpio_cxt[IO].mraa_cxt) {
 		errExit("write to uninitialized gpio");
 	}
@@ -69,8 +72,12 @@ void WRITE(unsigned IO, int v)
 
 int READ(unsigned IO)
 {
+        if (IO > NGPIO) 
+          errExit("invalid pin\n");
 	if (!gpio_cxt[IO].mraa_cxt) {
 		errExit("read from uninitialized gpio");
 	}
 	return mraa_gpio_read(gpio_cxt[IO].mraa_cxt);
 }
+
+/* vi: set et sw=2 sts=2: */

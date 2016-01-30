@@ -1536,7 +1536,6 @@
 
 // E1 STEP, DIR differ in Printrboard versions, below:
 //#define E1_ENABLE_PIN      44
-//
 //#define E2_STEP_PIN        26
 //#define E2_DIR_PIN         27
 //#define E2_ENABLE_PIN      45
@@ -1544,7 +1543,7 @@
 #define HEATER_0_PIN       21  // Extruder
 #define HEATER_1_PIN       46
 #define HEATER_2_PIN       47
-#define HEATER_BED_PIN     20  // Bed
+#define HEATER_BED_PIN     50  // Bed
 
 // If soft or fast PWM is off then use Teensyduino pin numbering, Marlin
 // fastio pin numbering otherwise
