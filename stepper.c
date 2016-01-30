@@ -43,9 +43,9 @@
 //===========================================================================
 block_t *current_block;  // A pointer to the block currently being traced
 
-timer_t timerid;
-struct itimerspec its;
-sigset_t mask;
+static timer_t timerid;
+static struct itimerspec its;
+static sigset_t mask;
 
 //===========================================================================
 //=============================private variables ============================
@@ -179,10 +179,8 @@ intRes = (uint16_t)(((uint64_t)longIn1 * (uint64_t)longIn2) >> 24)
 
 // Some useful constants
 
-#define ENABLE_STEPPER_DRIVER_INTERRUPT()   extern sigset_t mask; \
-                                            sigprocmask(SIG_UNBLOCK, &mask, NULL)
-#define DISABLE_STEPPER_DRIVER_INTERRUPT()  extern sigset_t mask; \
-                                            sigprocmask(SIG_BLOCK, &mask, NULL)
+#define ENABLE_STEPPER_DRIVER_INTERRUPT()   sigprocmask(SIG_UNBLOCK, &mask, NULL)
+#define DISABLE_STEPPER_DRIVER_INTERRUPT()  sigprocmask(SIG_BLOCK, &mask, NULL)
 
 void set_time(long nanosecs)
 {
