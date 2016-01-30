@@ -101,8 +101,6 @@ volatile signed char count_direction[NUM_AXIS] = { 1, 1, 1, 1};
 #undef FORCE_INLINE
 #define FORCE_INLINE static __attribute__((always_inline)) inline
 
-#define CHECK_ENDSTOPS  if(check_endstops)
-
 // intRes = intIn1 * intIn2 >> 16
 // uses:
 // r26 to store 0
@@ -311,9 +309,6 @@ FORCE_INLINE void trapezoid_generator_reset() {
   acc_step_rate = current_block->initial_rate;
   acceleration_time = calc_timer(acc_step_rate);
   //OCR1A = acceleration_time;
-  //its.it_value.tv_nsec = 500 * acceleration_time;
-  //if (timer_settime(timerid, 0, &its, NULL) == -1)
-    //errExit("timer_settime");
   set_time(500 * acceleration_time);
 
 //    SERIAL_ECHO_START;
@@ -362,9 +357,7 @@ handler(int sig, siginfo_t *si, void *uc)
         //OCR1A=2000; // 1kHz.
         // 1kHz
         //DEBUG_PRINT("no move\n");
-        its.it_value.tv_nsec = 500 * 2000; //1ms
-        if (timer_settime(timerid, 0, &its, NULL) == -1)
-          errExit("timer_settime");
+        set_time(500 * 2000);
     }
   }
 
@@ -376,110 +369,97 @@ handler(int sig, siginfo_t *si, void *uc)
     if((out_bits & (1<<X_AXIS))!=0){
       WRITE(X_DIR_PIN, INVERT_X_DIR);
       count_direction[X_AXIS]=-1;
-    }
-    else{
+    } else{
       WRITE(X_DIR_PIN, !INVERT_X_DIR);
       count_direction[X_AXIS]=1;
     }
     if((out_bits & (1<<Y_AXIS))!=0){
       WRITE(Y_DIR_PIN, INVERT_Y_DIR);
       count_direction[Y_AXIS]=-1;
-    }
-    else{
+    } else{
       WRITE(Y_DIR_PIN, !INVERT_Y_DIR);
       count_direction[Y_AXIS]=1;
     }
+    if ((out_bits & (1<<Z_AXIS)) != 0) {   
+      WRITE(Z_DIR_PIN,INVERT_Z_DIR);
+      count_direction[Z_AXIS]=-1;
+    } else {
+      WRITE(Z_DIR_PIN,!INVERT_Z_DIR);
+      count_direction[Z_AXIS]=1;
+    }
 
     // Set direction en check limit switches
-    if ((out_bits & (1<<X_AXIS)) != 0) {   // stepping along -X axis
-      CHECK_ENDSTOPS
-      {
-        {
-          #if defined(X_MIN_PIN) && X_MIN_PIN > -1
-            bool x_min_endstop=(READ(X_MIN_PIN) != X_MIN_ENDSTOP_INVERTING);
-            if(x_min_endstop && old_x_min_endstop && (current_block->steps_x > 0)) {
-              endstops_trigsteps[X_AXIS] = count_position[X_AXIS];
-              endstop_x_hit=true;
-              step_events_completed = current_block->step_event_count;
-            }
-            old_x_min_endstop = x_min_endstop;
-          #endif
-        }
+    if (check_endstops) {
+      if ((out_bits & (1<<X_AXIS)) != 0) {   // stepping along -X axis
+        #if defined(X_MIN_PIN) && X_MIN_PIN > -1
+          bool x_min_endstop=(READ(X_MIN_PIN) != X_MIN_ENDSTOP_INVERTING);
+          if(x_min_endstop && old_x_min_endstop && (current_block->steps_x > 0)) {
+            endstops_trigsteps[X_AXIS] = count_position[X_AXIS];
+            endstop_x_hit=true;
+            step_events_completed = current_block->step_event_count;
+            DEBUG_PRINT("X_MIN_ENDSTOP hit\n");
+          }
+          old_x_min_endstop = x_min_endstop;
+        #endif
       }
-    }
-    else { // +direction
-      CHECK_ENDSTOPS
-      {
-        {
-          #if defined(X_MAX_PIN) && X_MAX_PIN > -1
-            bool x_max_endstop=(READ(X_MAX_PIN) != X_MAX_ENDSTOP_INVERTING);
-            if(x_max_endstop && old_x_max_endstop && (current_block->steps_x > 0)){
-              endstops_trigsteps[X_AXIS] = count_position[X_AXIS];
-              endstop_x_hit=true;
-              step_events_completed = current_block->step_event_count;
-            }
-            old_x_max_endstop = x_max_endstop;
-          #endif
-        }
+      else { // +direction
+        #if defined(X_MAX_PIN) && X_MAX_PIN > -1
+          bool x_max_endstop=(READ(X_MAX_PIN) != X_MAX_ENDSTOP_INVERTING);
+          if(x_max_endstop && old_x_max_endstop && (current_block->steps_x > 0)){
+            endstops_trigsteps[X_AXIS] = count_position[X_AXIS];
+            endstop_x_hit=true;
+            step_events_completed = current_block->step_event_count;
+            DEBUG_PRINT("X_MAX_ENDSTOP hit\n");
+          }
+          old_x_max_endstop = x_max_endstop;
+        #endif
       }
-    }
 
-    if ((out_bits & (1<<Y_AXIS)) != 0) {   // -direction
-      CHECK_ENDSTOPS
-      {
+      if ((out_bits & (1<<Y_AXIS)) != 0) {   // -direction
         #if defined(Y_MIN_PIN) && Y_MIN_PIN > -1
           bool y_min_endstop=(READ(Y_MIN_PIN) != Y_MIN_ENDSTOP_INVERTING);
           if(y_min_endstop && old_y_min_endstop && (current_block->steps_y > 0)) {
             endstops_trigsteps[Y_AXIS] = count_position[Y_AXIS];
             endstop_y_hit=true;
             step_events_completed = current_block->step_event_count;
+            DEBUG_PRINT("Y_MIN_ENDSTOP hit\n");
           }
           old_y_min_endstop = y_min_endstop;
         #endif
       }
-    }
-    else { // +direction
-      CHECK_ENDSTOPS
-      {
+      else { // +direction
         #if defined(Y_MAX_PIN) && Y_MAX_PIN > -1
           bool y_max_endstop=(READ(Y_MAX_PIN) != Y_MAX_ENDSTOP_INVERTING);
           if(y_max_endstop && old_y_max_endstop && (current_block->steps_y > 0)){
             endstops_trigsteps[Y_AXIS] = count_position[Y_AXIS];
             endstop_y_hit=true;
             step_events_completed = current_block->step_event_count;
+            DEBUG_PRINT("Y_MAX_ENDSTOP hit\n");
           }
           old_y_max_endstop = y_max_endstop;
         #endif
       }
-    }
 
-    if ((out_bits & (1<<Z_AXIS)) != 0) {   // -direction
-      WRITE(Z_DIR_PIN,INVERT_Z_DIR);
-      count_direction[Z_AXIS]=-1;
-      CHECK_ENDSTOPS
-      {
+      if ((out_bits & (1<<Z_AXIS)) != 0) {   // -direction
         #if defined(Z_MIN_PIN) && Z_MIN_PIN > -1
           bool z_min_endstop=(READ(Z_MIN_PIN) != Z_MIN_ENDSTOP_INVERTING);
           if(z_min_endstop && old_z_min_endstop && (current_block->steps_z > 0)) {
             endstops_trigsteps[Z_AXIS] = count_position[Z_AXIS];
             endstop_z_hit=true;
             step_events_completed = current_block->step_event_count;
+            DEBUG_PRINT("Z_MIN_ENDSTOP hit\n");
           }
           old_z_min_endstop = z_min_endstop;
         #endif
       }
-    }
-    else { // +direction
-      WRITE(Z_DIR_PIN,!INVERT_Z_DIR);
-      count_direction[Z_AXIS]=1;
-      CHECK_ENDSTOPS
-      {
+      else { // +direction
         #if defined(Z_MAX_PIN) && Z_MAX_PIN > -1
           bool z_max_endstop=(READ(Z_MAX_PIN) != Z_MAX_ENDSTOP_INVERTING);
           if(z_max_endstop && old_z_max_endstop && (current_block->steps_z > 0)) {
             endstops_trigsteps[Z_AXIS] = count_position[Z_AXIS];
             endstop_z_hit=true;
             step_events_completed = current_block->step_event_count;
+            DEBUG_PRINT("Z_MAX_ENDSTOP hit\n");
           }
           old_z_max_endstop = z_max_endstop;
         #endif
@@ -499,7 +479,6 @@ handler(int sig, siginfo_t *si, void *uc)
 
 
     int8_t i;
-
     for(i=0; i < step_loops; i++) { // Take multiple steps per interrupt (For high speed moves)
       #ifndef AT90USB
       MSerial.checkRx(); // Check for serial chars.
@@ -558,9 +537,7 @@ handler(int sig, siginfo_t *si, void *uc)
       // step_rate to timer interval
       timer = calc_timer(acc_step_rate);
       //OCR1A = timer;
-      its.it_value.tv_nsec = 500 * timer;
-      if (timer_settime(timerid, 0, &its, NULL) == -1)
-        errExit("timer_settime");
+      set_time(500 * timer);
       acceleration_time += timer;
     }
     else if (step_events_completed > (unsigned long int)current_block->decelerate_after) {
@@ -580,16 +557,12 @@ handler(int sig, siginfo_t *si, void *uc)
       // step_rate to timer interval
       timer = calc_timer(step_rate);
       //OCR1A = timer;
-      its.it_value.tv_nsec = 500 * timer;
-      if (timer_settime(timerid, 0, &its, NULL) == -1)
-        errExit("timer_settime");
+      set_time(500 * timer);
       deceleration_time += timer;
     }
     else {
       //OCR1A = OCR1A_nominal;
-      its.it_value.tv_nsec = 500 * OCR1A_nominal;
-      if (timer_settime(timerid, 0, &its, NULL) == -1)
-        errExit("timer_settime");
+      set_time(500 * OCR1A_nominal);
       // ensure we're running at the correct step rate, even if we just came off an acceleration
       step_loops = step_loops_nominal;
     }
@@ -735,9 +708,6 @@ void st_init()
 
   /* start the one-shot timer */
   memset(&its, 0, sizeof(struct itimerspec));
-  //its.it_value.tv_nsec = 500 * 0x4000;
-  //if (timer_settime(timerid, 0, &its, NULL) == -1)
-  //  errExit("timer_settime");
   set_time(500 * 0x4000);
 
   ENABLE_STEPPER_DRIVER_INTERRUPT();

@@ -1540,7 +1540,7 @@
 //#define E2_DIR_PIN         27
 //#define E2_ENABLE_PIN      45
 
-#define HEATER_0_PIN       21  // Extruder
+#define HEATER_0_PIN       5  // Extruder
 #define HEATER_1_PIN       46
 #define HEATER_2_PIN       47
 #define HEATER_BED_PIN     50  // Bed

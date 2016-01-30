@@ -117,7 +117,7 @@ static FORCE_INLINE void plan_discard_current_block()
 static FORCE_INLINE block_t *plan_get_current_block() 
 {
   /*
-  DEBUG_PRINT("block buffer head: %u, tail: %u\n",
+  DEBUG_PRINT("Getting new block, block buffer head: %u, tail: %u\n",
       block_buffer_head, block_buffer_tail);
   */
   if (block_buffer_head == block_buffer_tail) { 
