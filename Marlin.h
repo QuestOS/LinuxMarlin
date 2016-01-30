@@ -127,8 +127,8 @@ unsigned char SREG;
 
 
 #ifndef CRITICAL_SECTION_START
-  #define CRITICAL_SECTION_START  unsigned char _sreg = SREG; cli();
-  #define CRITICAL_SECTION_END    SREG = _sreg;
+  #define CRITICAL_SECTION_START  cli();
+  #define CRITICAL_SECTION_END    sei();
 #endif //CRITICAL_SECTION_START
 
 extern int extrudemultiply;
