@@ -42,9 +42,9 @@
 //===========================================================================
 block_t *current_block;  // A pointer to the block currently being traced
 
-timer_t timerid;
-struct itimerspec its;
-sigset_t mask;
+static timer_t timerid;
+static struct itimerspec its;
+static sigset_t mask;
 
 //===========================================================================
 //=============================private variables ============================
@@ -178,10 +178,16 @@ intRes = (uint16_t)(((uint64_t)longIn1 * (uint64_t)longIn2) >> 24)
 
 // Some useful constants
 
-#define ENABLE_STEPPER_DRIVER_INTERRUPT()   extern sigset_t mask; \
-                                            sigprocmask(SIG_UNBLOCK, &mask, NULL)
-#define DISABLE_STEPPER_DRIVER_INTERRUPT()  extern sigset_t mask; \
-                                            sigprocmask(SIG_BLOCK, &mask, NULL)
+#define ENABLE_STEPPER_DRIVER_INTERRUPT()   sigprocmask(SIG_UNBLOCK, &mask, NULL)
+#define DISABLE_STEPPER_DRIVER_INTERRUPT()  sigprocmask(SIG_BLOCK, &mask, NULL)
+
+void set_time(long nanosecs)
+{
+  //DEBUG_PRINT("set_time: %lfus\n", nanosecs / 1000.0);
+  its.it_value.tv_nsec = nanosecs;
+  if (timer_settime(timerid, 0, &its, NULL) == -1)
+    errExit("timer_settime");
+}
 
 void checkHitEndstops()
 {
@@ -305,9 +311,10 @@ FORCE_INLINE void trapezoid_generator_reset() {
   acc_step_rate = current_block->initial_rate;
   acceleration_time = calc_timer(acc_step_rate);
   //OCR1A = acceleration_time;
-  its.it_value.tv_nsec = 500 * acceleration_time;
-  if (timer_settime(timerid, 0, &its, NULL) == -1)
-    errExit("timer_settime");
+  //its.it_value.tv_nsec = 500 * acceleration_time;
+  //if (timer_settime(timerid, 0, &its, NULL) == -1)
+    //errExit("timer_settime");
+  set_time(500 * acceleration_time);
 
 //    SERIAL_ECHO_START;
 //    SERIAL_ECHOPGM("advance :");
@@ -728,9 +735,10 @@ void st_init()
 
   /* start the one-shot timer */
   memset(&its, 0, sizeof(struct itimerspec));
-  its.it_value.tv_nsec = 500 * 0x4000;
-  if (timer_settime(timerid, 0, &its, NULL) == -1)
-    errExit("timer_settime");
+  //its.it_value.tv_nsec = 500 * 0x4000;
+  //if (timer_settime(timerid, 0, &its, NULL) == -1)
+  //  errExit("timer_settime");
+  set_time(500 * 0x4000);
 
   ENABLE_STEPPER_DRIVER_INTERRUPT();
 
