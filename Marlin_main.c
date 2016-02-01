@@ -600,6 +600,7 @@ void process_commands()
 {
   unsigned long codenum; //throw away variable
   char *starpos = NULL;
+  int8_t i;
 #ifdef ENABLE_AUTO_BED_LEVELING
   float x_tmp, y_tmp, z_tmp, real_z;
 #endif
@@ -620,6 +621,22 @@ void process_commands()
     case 28: //G28 Home all Axis one at a time
       homing();
       return;
+    case 92: // G92
+      if(!code_seen(axis_codes[E_AXIS]))
+        st_synchronize();
+      for(i=0; i < NUM_AXIS; i++) {
+        if(code_seen(axis_codes[i])) {
+          if(i == E_AXIS) {
+            current_position[i] = code_value();
+            plan_set_e_position(current_position[E_AXIS]);
+           } else {
+             current_position[i] = code_value()+add_homeing[i];
+             plan_set_position(current_position[X_AXIS], current_position[Y_AXIS],
+                 current_position[Z_AXIS], current_position[E_AXIS]);
+           }
+        }
+      }
+      break;
     }
   }
 }
