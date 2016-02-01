@@ -34,6 +34,7 @@
 #include "temperature.h"
 #include "planner.h"
 #include "stepper.h"
+#include "timer.h"
 #include "language.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -269,10 +270,17 @@ int setup(char *path)
 
   //init timer
   DEBUG_PRINT("initializing timer\n");
-  if(timeInit() < 0) {
+  if(clock_init() < 0) {
     fprintf(stderr, "Failed to init timer\n");
     exit(-1);
   }
+
+  //init board specific data
+  DEBUG_PRINT("initializing board specific data\n");
+  mraa_init();
+  minnowmax_gpio_init();
+
+  timer_init();
 
   //tp_init();    // Initialize temperature loop
   DEBUG_PRINT("initializing planner\n");
@@ -280,11 +288,6 @@ int setup(char *path)
 #ifdef DAC_STEPPER_CURRENT
   //dac_init(); //Initialize DAC to set stepper current
 #endif
-
-  //init board specific data
-  DEBUG_PRINT("initializing board specific data\n");
-  mraa_init();
-  minnowmax_gpio_init();
 
   //init stepper
   DEBUG_PRINT("initializing stepper\n");

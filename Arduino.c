@@ -45,7 +45,7 @@ unsigned long millis( void )
 }
 
 /* TSC snapshot */
-int timeInit(void)
+int clock_init(void)
 {
     int cpufreq_fd, ret;
     char buf[0x400];

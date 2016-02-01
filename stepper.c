@@ -21,8 +21,6 @@
 /* The timer calculations of this module informed by the 'RepRap cartesian firmware' by Zack Smith
    and Philipp Tiefenbacher. */
 
-#include <signal.h>
-#include <time.h>
 #include "Marlin.h"
 #include "stepper.h"
 #include "planner.h"
@@ -31,6 +29,7 @@
 #include "speed_lookuptable.h"
 #include <mraa.h>
 #include "fastio.h"
+#include "timer.h"
 //#include "DAC.h"
 #if defined(DIGIPOTSS_PIN) && DIGIPOTSS_PIN > -1
 #include <SPI.h>
@@ -42,9 +41,9 @@
 //===========================================================================
 block_t *current_block;  // A pointer to the block currently being traced
 
-static timer_t timerid;
-static struct itimerspec its;
-static sigset_t mask;
+int timerid;
+#define ENABLE_STEPPER_DRIVER_INTERRUPT()   enable_timer(timerid)
+#define DISABLE_STEPPER_DRIVER_INTERRUPT()  disable_timer(timerid)
 
 //===========================================================================
 //=============================private variables ============================
@@ -176,17 +175,6 @@ intRes = (uint16_t)(((uint64_t)longIn1 * (uint64_t)longIn2) >> 24)
 
 // Some useful constants
 
-#define ENABLE_STEPPER_DRIVER_INTERRUPT()   sigprocmask(SIG_UNBLOCK, &mask, NULL)
-#define DISABLE_STEPPER_DRIVER_INTERRUPT()  sigprocmask(SIG_BLOCK, &mask, NULL)
-
-void set_time(long nanosecs)
-{
-  //DEBUG_PRINT("set_time: %lfus\n", nanosecs / 1000.0);
-  its.it_value.tv_nsec = nanosecs;
-  if (timer_settime(timerid, 0, &its, NULL) == -1)
-    errExit("timer_settime");
-}
-
 void checkHitEndstops()
 {
  if( endstop_x_hit || endstop_y_hit || endstop_z_hit) {
@@ -309,7 +297,7 @@ FORCE_INLINE void trapezoid_generator_reset() {
   acc_step_rate = current_block->initial_rate;
   acceleration_time = calc_timer(acc_step_rate);
   //OCR1A = acceleration_time;
-  set_time(500 * acceleration_time);
+  set_time(timerid, 0, 500 * acceleration_time);
 
 //    SERIAL_ECHO_START;
 //    SERIAL_ECHOPGM("advance :");
@@ -326,10 +314,8 @@ FORCE_INLINE void trapezoid_generator_reset() {
 // "The Stepper Driver Interrupt" - This timer interrupt is the workhorse.
 // It pops blocks from the block_buffer and executes them by pulsing the stepper pins appropriately.
 //ISR(TIMER1_COMPA_vect)
-static void
-handler(int sig, siginfo_t *si, void *uc)
+static void handler(void)
 {
-  //DEBUG_PRINT("timer fired\n");
   // If there is no current block, attempt to pop one from the buffer
   if (current_block == NULL) {
     // Anything in the buffer?
@@ -357,7 +343,7 @@ handler(int sig, siginfo_t *si, void *uc)
         //OCR1A=2000; // 1kHz.
         // 1kHz
         //DEBUG_PRINT("no move\n");
-        set_time(500 * 2000);
+        set_time(timerid, 0, 500 * 2000);
     }
   }
 
@@ -537,7 +523,7 @@ handler(int sig, siginfo_t *si, void *uc)
       // step_rate to timer interval
       timer = calc_timer(acc_step_rate);
       //OCR1A = timer;
-      set_time(500 * timer);
+      set_time(timerid, 0, 500 * timer);
       acceleration_time += timer;
     }
     else if (step_events_completed > (unsigned long int)current_block->decelerate_after) {
@@ -557,12 +543,12 @@ handler(int sig, siginfo_t *si, void *uc)
       // step_rate to timer interval
       timer = calc_timer(step_rate);
       //OCR1A = timer;
-      set_time(500 * timer);
+      set_time(timerid, 0, 500 * timer);
       deceleration_time += timer;
     }
     else {
       //OCR1A = OCR1A_nominal;
-      set_time(500 * OCR1A_nominal);
+      set_time(timerid, 0, 500 * OCR1A_nominal);
       // ensure we're running at the correct step rate, even if we just came off an acceleration
       step_loops = step_loops_nominal;
     }
@@ -681,34 +667,10 @@ void st_init()
   TCNT1 = 0;
 */
 
-  /* establish handler for timer signal */
-  struct sigaction sa;
-  struct sigevent sev;
-
-  sa.sa_flags = SA_SIGINFO;
-  sa.sa_sigaction = handler;
-  sigemptyset(&sa.sa_mask);
-  if (sigaction(SIGALRM, &sa, NULL) == -1)
-    errExit("sigaction");
-
-  /* block timer signal temporarily */
-  sigemptyset(&mask);
-  sigaddset(&mask, SIGALRM);
-  if (sigprocmask(SIG_SETMASK, &mask, NULL) == -1)
-    errExit("sigprocmask");
-
-  /* create the timer */
-  sev.sigev_notify = SIGEV_SIGNAL;
-  sev.sigev_signo = SIGALRM;
-  sev.sigev_value.sival_ptr = &timerid;
-  if (timer_create(CLOCK_REALTIME, &sev, &timerid) == -1)
-    errExit("timer_create");
-
-  DEBUG_PRINT("timer ID is 0x%lx\n", (long) timerid);
+  timerid = create_timer(handler);
 
   /* start the one-shot timer */
-  memset(&its, 0, sizeof(struct itimerspec));
-  set_time(500 * 0x4000);
+  set_time(timerid, 0, 500 * 0x4000);
 
   ENABLE_STEPPER_DRIVER_INTERRUPT();
 
