@@ -10,7 +10,8 @@
 #include "Marlin.h"
 #include "fastio.h"
 
-static uint64_t tsc_init = 0;
+//static uint64_t tsc_init = 0;
+static struct timeval start;
 static float clocks_per_ns = 0;
 float cpufreq = 0;
 
@@ -36,12 +37,17 @@ unsigned long millis( void )
      The underlying counter is a 64 bit value, but the representation of millis
      as unsigned 32-bits means it recycles in ~ 1190 hours.*/
 
-    uint64_t tsc_cur = rdtsc(), diff = 0, divisor = 0;
-    divisor = (cpufreq * 1000);
-    diff = tsc_cur - tsc_init;
+    //uint64_t tsc_cur = rdtsc(), diff = 0, divisor = 0;
+    //divisor = (cpufreq * 1000);
+    //diff = tsc_cur - tsc_init;
+    struct timeval end;
+    uint64_t diff;
 
-    return (unsigned long) ( (diff / divisor) );
+    gettimeofday(&end, NULL);
+    diff = (end.tv_sec * 1000000 + end.tv_usec)
+            - (start.tv_sec * 1000000 + start.tv_usec);
 
+    return (diff / 1000);
 }
 
 /* TSC snapshot */
@@ -53,7 +59,8 @@ int clock_init(void)
     char * mhz_str = "cpu MHz\t\t: ";
 
     /* Grab initial TSC snapshot */
-    tsc_init = rdtsc();
+    //tsc_init = rdtsc();
+    gettimeofday(&start, NULL);
 
     cpufreq_fd = open("/proc/cpuinfo", O_RDONLY);
     if( cpufreq_fd < 0){

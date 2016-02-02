@@ -13,8 +13,8 @@ sei(): avr, enable interrupt
 
 pinMode(): arduino
 
-millis(): arduino
-XXX: should not use RDTSC, since task can be migrated to other cores
+----millis(): arduino
+----XXX: should not use RDTSC, since task can be migrated to other cores
 
 constrain(): arduino
 
