@@ -36,7 +36,6 @@ void minnowmax_gpio_init()
 void SET_OUTPUT(unsigned IO)
 {
         DEBUG_PRINT("set output %d: %d\n", IO, GET_OS_MAPPING(IO));
-	DEBUG_PRINT("setting up pin %s\n", gpio_cxt[IO].pin_name);
         if (IO > NGPIO) return;
 	if (!gpio_cxt[IO].mraa_cxt) {
 		gpio_cxt[IO].mraa_cxt = mraa_gpio_init_raw(GET_OS_MAPPING(IO));

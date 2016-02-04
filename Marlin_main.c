@@ -274,17 +274,17 @@ int setup(char *path)
     exit(-1);
   }
 
+  //init board specific data
+  DEBUG_PRINT("initializing board specific data\n");
+  mraa_init();
+  minnowmax_gpio_init();
+
   tp_init();    // Initialize temperature loop
   DEBUG_PRINT("initializing planner\n");
   plan_init();  // Initialize planner;
 #ifdef DAC_STEPPER_CURRENT
   //dac_init(); //Initialize DAC to set stepper current
 #endif
-
-  //init board specific data
-  DEBUG_PRINT("initializing board specific data\n");
-  mraa_init();
-  minnowmax_gpio_init();
 
   //init stepper
   DEBUG_PRINT("initializing stepper\n");
