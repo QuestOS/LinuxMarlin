@@ -116,9 +116,7 @@ void digitalWrite(int pin, int val)
 void analogWrite(int pin, int val)
 {
   if (!pwm_cxt) {
-    DEBUG_PRINT("input pin: %d\n", pin);
-    int xxx = GET_OS_MAPPING(pin);
-    DEBUG_PRINT("PWM pin: %d\n", xxx);
+    DEBUG_PRINT("pwm pin: %d\n", pin);
     pwm_cxt = mraa_pwm_init(pin);
     if (!pwm_cxt) {
       errExit("mraa_pwm_init");

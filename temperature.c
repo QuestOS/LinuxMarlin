@@ -38,9 +38,7 @@
 //===========================================================================
 //=============================public variables============================
 //===========================================================================
-static timer_t timerid;
-static struct itimerspec its;
-static sigset_t mask;
+static int timerid;
 
 int target_temperature[EXTRUDERS] = { 0 };
 int target_temperature_bed = 0;
@@ -805,38 +803,12 @@ void tp_init()
   //Timer0 is already set up to generate a millisecond (1KHz) interrupt to 
   //update the millisecond counter reported by millis() in Arduino
   /* establish handler for timer signal */
-  struct sigaction sa;
-  struct sigevent sev;
-
-  sa.sa_flags = SA_SIGINFO;
-  sa.sa_sigaction = handler;
-  sigemptyset(&sa.sa_mask);
-  if (sigaction(SIGALRM, &sa, NULL) == -1)
-    errExit("sigaction");
-
-  /* block timer signal temporarily */
-  sigemptyset(&mask);
-  sigaddset(&mask, SIGALRM);
-  if (sigprocmask(SIG_SETMASK, &mask, NULL) == -1)
-    errExit("sigprocmask");
-
-  /* create the timer */
-  sev.sigev_notify = SIGEV_SIGNAL;
-  sev.sigev_signo = SIGALRM;
-  sev.sigev_value.sival_ptr = &timerid;
-  if (timer_create(CLOCK_REALTIME, &sev, &timerid) == -1)
-    errExit("timer_create");
-
-  DEBUG_PRINT("timer ID is 0x%lx\n", (long) timerid);
+  timerid = create_timer(handler);
 
   /* start the periodic timer */
-  memset(&its, 0, sizeof(struct itimerspec));
-  its.it_interval.tv_nsec = 1000000 * 128;
-  if (timer_settime(timerid, 0, &its, NULL) == -1)
-    errExit("timer_settime");
+  set_time(timerid, 1, 1000000 * 128);
+  enable_timer(timerid);
 
-  sigprocmask(SIG_UNBLOCK, &mask, NULL);
-  
   // Wait for temperature measurement to settle
   delay(250);
 
