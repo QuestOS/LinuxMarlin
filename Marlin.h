@@ -47,15 +47,6 @@
 #define DEBUG_PRINT(...) do{ } while ( false )
 #endif
 
-#define RDTSC(var)                                                        \
-  {                                                                       \
-    uint32_t var##_lo, var##_hi;                                            \
-    asm volatile("cpuid\n\trdtsc" : "=a"(var##_lo), "=d"(var##_hi));      \
-    var = var##_hi;                                                       \
-    var <<= 32;                                                           \
-    var |= var##_lo;                                                      \
-  }
-
 #define SERIAL_ECHO_START 
 #define SERIAL_ECHO(x) SERIAL_PROTOCOL(x)
 #define SERIAL_ECHOPGM(x) SERIAL_PROTOCOLPGM(x)

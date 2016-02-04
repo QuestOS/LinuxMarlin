@@ -7,7 +7,7 @@
 typedef unsigned char byte;
 
 unsigned long millis();
-int timeInit();
+int clock_init();
 
 void delay(unsigned long time);
 float constrain(float x, float a, float b);

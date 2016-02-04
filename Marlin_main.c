@@ -34,6 +34,7 @@
 #include "temperature.h"
 #include "planner.h"
 #include "stepper.h"
+#include "timer.h"
 #include "language.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -269,7 +270,7 @@ int setup(char *path)
 
   //init timer
   DEBUG_PRINT("initializing timer\n");
-  if(timeInit() < 0) {
+  if(clock_init() < 0) {
     fprintf(stderr, "Failed to init timer\n");
     exit(-1);
   }
@@ -279,7 +280,9 @@ int setup(char *path)
   mraa_init();
   minnowmax_gpio_init();
 
-  tp_init();    // Initialize temperature loop
+  timer_init();
+
+  //tp_init();    // Initialize temperature loop
   DEBUG_PRINT("initializing planner\n");
   plan_init();  // Initialize planner;
 #ifdef DAC_STEPPER_CURRENT
@@ -597,6 +600,7 @@ void process_commands()
 {
   unsigned long codenum; //throw away variable
   char *starpos = NULL;
+  int8_t i;
 #ifdef ENABLE_AUTO_BED_LEVELING
   float x_tmp, y_tmp, z_tmp, real_z;
 #endif
@@ -617,6 +621,22 @@ void process_commands()
     case 28: //G28 Home all Axis one at a time
       homing();
       return;
+    case 92: // G92
+      if(!code_seen(axis_codes[E_AXIS]))
+        st_synchronize();
+      for(i=0; i < NUM_AXIS; i++) {
+        if(code_seen(axis_codes[i])) {
+          if(i == E_AXIS) {
+            current_position[i] = code_value();
+            plan_set_e_position(current_position[E_AXIS]);
+           } else {
+             current_position[i] = code_value()+add_homeing[i];
+             plan_set_position(current_position[X_AXIS], current_position[Y_AXIS],
+                 current_position[Z_AXIS], current_position[E_AXIS]);
+           }
+        }
+      }
+      break;
     }
   }
 }
