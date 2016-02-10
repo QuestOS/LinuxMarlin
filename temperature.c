@@ -758,7 +758,7 @@ void tp_init()
   #endif
 
   // Set analog inputs
-  // TODO
+  /* --YY-- */
   //ADCSRA = 1<<ADEN | 1<<ADSC | 1<<ADIF | 0x07;
   //DIDR0 = 0;
   #ifdef DIDR2
@@ -766,23 +766,22 @@ void tp_init()
   #endif
   #if defined(TEMP_0_PIN) && (TEMP_0_PIN > -1)
     #if TEMP_0_PIN < 8
-       DIDR0 |= 1 << TEMP_0_PIN; 
+    /* --YY-- */
+       //DIDR0 |= 1 << TEMP_0_PIN; 
     #else
        DIDR2 |= 1<<(TEMP_0_PIN - 8); 
     #endif
   #endif
   #if defined(TEMP_1_PIN) && (TEMP_1_PIN > -1)
     #if TEMP_1_PIN < 8
-       //TODO
-       //DIDR0 |= 1<<TEMP_1_PIN; 
+       DIDR0 |= 1<<TEMP_1_PIN; 
     #else
        DIDR2 |= 1<<(TEMP_1_PIN - 8); 
     #endif
   #endif
   #if defined(TEMP_2_PIN) && (TEMP_2_PIN > -1)
     #if TEMP_2_PIN < 8
-    //TODO
-       //DIDR0 |= 1 << TEMP_2_PIN; 
+       DIDR0 |= 1 << TEMP_2_PIN; 
     #else
        DIDR2 |= 1<<(TEMP_2_PIN - 8); 
     #endif
@@ -806,7 +805,8 @@ void tp_init()
   timerid = create_timer(handler);
 
   /* start the periodic timer */
-  set_time(timerid, 1, 1000000 * 128);
+  /* normal mode, so no matter what's in OCR0B, frequency remains 1KHz */
+  set_time(timerid, 1, 1000000);
   enable_timer(timerid);
 
   // Wait for temperature measurement to settle
@@ -1127,17 +1127,27 @@ handler(int sig, siginfo_t *si, void *uc)
         #if TEMP_0_PIN > 7
           ADCSRB = 1<<MUX5;
         #else
-          ADCSRB = 0;
+        /* --YY-- */
+        //free running mode
+          //ADCSRB = 0;
         #endif
-        ADMUX = ((1 << REFS0) | (TEMP_0_PIN & 0x07));
-        ADCSRA |= 1<<ADSC; // Start conversion
+        /* --YY-- */
+        //AVcc with external capacitor on AREF pin
+        //ADMUX = ((1 << REFS0) | (TEMP_0_PIN & 0x07));
+        //ADCSRA |= 1<<ADSC; // Start conversion
+        //XXX: start and measure temp all in measure phase
       #endif
       //lcd_buttons_update();
       temp_state = 1;
       break;
     case 1: // Measure TEMP_0
       #if defined(TEMP_0_PIN) && (TEMP_0_PIN > -1)
-        raw_temp_0_value += ADC;
+      /* --YY-- */
+        //raw_temp_0_value += ADC;
+        //start/read data
+        //i2c_write(TEMP_0_ADDR /*0x90*/, 0x80);
+        //char temp_data[2];
+        //i2c_read(TEMP_0_ADDR /*0x91*/, &temp_data, 2);
       #endif
       #ifdef HEATER_0_USES_MAX6675 // TODO remove the blocking
         raw_temp_0_value = read_max6675();
@@ -1168,20 +1178,17 @@ handler(int sig, siginfo_t *si, void *uc)
         #if TEMP_1_PIN > 7
           ADCSRB = 1<<MUX5;
         #else
-          //TODO
-          //ADCSRB = 0;
+          ADCSRB = 0;
         #endif
-        //TODO
-        //ADMUX = ((1 << REFS0) | (TEMP_1_PIN & 0x07));
-        //ADCSRA |= 1<<ADSC; // Start conversion
+        ADMUX = ((1 << REFS0) | (TEMP_1_PIN & 0x07));
+        ADCSRA |= 1<<ADSC; // Start conversion
       #endif
       //lcd_buttons_update();
       temp_state = 5;
       break;
     case 5: // Measure TEMP_1
       #if defined(TEMP_1_PIN) && (TEMP_1_PIN > -1)
-      //TODO
-        //raw_temp_1_value += ADC;
+        raw_temp_1_value += ADC;
       #endif
       temp_state = 6;
       break;
@@ -1190,20 +1197,17 @@ handler(int sig, siginfo_t *si, void *uc)
         #if TEMP_2_PIN > 7
           ADCSRB = 1<<MUX5;
         #else
-        //TODO
-          //ADCSRB = 0;
+          ADCSRB = 0;
         #endif
-        //TODO
-        //ADMUX = ((1 << REFS0) | (TEMP_2_PIN & 0x07));
-        //ADCSRA |= 1<<ADSC; // Start conversion
+        ADMUX = ((1 << REFS0) | (TEMP_2_PIN & 0x07));
+        ADCSRA |= 1<<ADSC; // Start conversion
       #endif
       //lcd_buttons_update();
       temp_state = 7;
       break;
     case 7: // Measure TEMP_2
       #if defined(TEMP_2_PIN) && (TEMP_2_PIN > -1)
-      //TODO
-        //raw_temp_2_value += ADC;
+        raw_temp_2_value += ADC;
       #endif
       temp_state = 0;
       temp_count++;
@@ -1216,7 +1220,7 @@ handler(int sig, siginfo_t *si, void *uc)
 //      SERIAL_ERRORLNPGM("Temp measurement error!");
 //      break;
   }
-    
+  
   if(temp_count >= 16) // 8 ms * 16 = 128ms.
   {
     if (!temp_meas_ready) //Only update the raw values if they have been read. Else we could be updating them during reading.
