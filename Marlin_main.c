@@ -621,6 +621,13 @@ void process_commands()
     case 28: //G28 Home all Axis one at a time
       homing();
       return;
+    case 90: // G90
+      relative_mode = false;
+      break;
+    case 91: // G91
+      fprintf(stderr, "relative mode not fully supported yet!\n");
+      relative_mode = true;
+      break;
     case 92: // G92
       if(!code_seen(axis_codes[E_AXIS]))
         st_synchronize();
