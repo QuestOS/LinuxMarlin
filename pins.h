@@ -1566,7 +1566,7 @@
   #define X_STOP_PIN         21
   #define Y_STOP_PIN         23
   #define Z_STOP_PIN         25
-  //#define TEMP_0_PIN          1  // Extruder / Analog pin numbering
+  #define TEMP_0_PIN          1  // Extruder / Analog pin numbering
   //#define TEMP_BED_PIN        0  // Bed / Analog pin numbering
   //#define SDSS               20
   //#define E1_STEP_PIN        13
@@ -1583,8 +1583,8 @@
 
 #endif
 
-#define TEMP_1_PIN         2
-#define TEMP_2_PIN         3
+//#define TEMP_1_PIN         2
+//#define TEMP_2_PIN         3
 
 #define SDPOWER            -1
 #define LED_PIN            -1
