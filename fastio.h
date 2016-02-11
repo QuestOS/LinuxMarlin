@@ -9,6 +9,7 @@
 #include <mraa.h>
 
 #define NGPIO 26
+#define ADC_ADDRESS 0x48
 
 struct gpio_context {
 	mraa_gpio_context mraa_cxt;

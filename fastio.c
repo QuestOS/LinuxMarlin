@@ -3,6 +3,7 @@
 #include <string.h>
 
 struct gpio_context gpio_cxt[NGPIO];
+mraa_i2c_context temp_sensor;
 
 static const int minnowmax_pin_mapping[NGPIO+1] = {
 	-1, -1, -1, -1, -1, 476, 481,
@@ -33,10 +34,21 @@ void minnowmax_gpio_init()
 	}
 }
 
+void minnowmax_i2c_init()
+{
+  temp_sensor = mraa_i2c_init_raw(0);
+  if (!temp_sensor) {
+    errExit("mraa_i2c_init_raw");
+  }
+
+  if (mraa_i2c_address(temp_sensor, ADC_ADDRESS) != MRAA_SUCCESS)
+    errExit("mraa_i2c_address");
+}
+
 void SET_OUTPUT(unsigned IO)
 {
-        DEBUG_PRINT("set output %d: %d\n", IO, GET_OS_MAPPING(IO));
-        if (IO > NGPIO) return;
+  DEBUG_PRINT("set output %d: %d\n", IO, GET_OS_MAPPING(IO));
+  if (IO > NGPIO) return;
 	if (!gpio_cxt[IO].mraa_cxt) {
 		gpio_cxt[IO].mraa_cxt = mraa_gpio_init_raw(GET_OS_MAPPING(IO));
 		if (!gpio_cxt[IO].mraa_cxt) {
@@ -48,8 +60,8 @@ void SET_OUTPUT(unsigned IO)
 
 void SET_INPUT(unsigned IO)
 {
-	//DEBUG_PRINT("setting up pin %s\n", gpio_cxt[IO].pin_name);
-        if (IO > NGPIO) return;
+	DEBUG_PRINT("setting up pin %s\n", gpio_cxt[IO].pin_name);
+  if (IO > NGPIO) return;
 	if (!gpio_cxt[IO].mraa_cxt) {
 		gpio_cxt[IO].mraa_cxt = mraa_gpio_init_raw(GET_OS_MAPPING(IO));
 		if (!gpio_cxt[IO].mraa_cxt) {
@@ -62,7 +74,7 @@ void SET_INPUT(unsigned IO)
 void WRITE(unsigned IO, int v)
 {
 	//DEBUG_PRINT("writing to pin %s\n", gpio_cxt[IO].pin_name);
-        if (IO > NGPIO) return;
+  if (IO > NGPIO) return;
 	if (!gpio_cxt[IO].mraa_cxt) {
 		errExit("write to uninitialized gpio");
 	}
@@ -71,8 +83,9 @@ void WRITE(unsigned IO, int v)
 
 int READ(unsigned IO)
 {
-        if (IO > NGPIO) 
-          errExit("invalid pin\n");
+	DEBUG_PRINT("reading from pin %s\n", gpio_cxt[IO].pin_name);
+  if (IO > NGPIO) 
+    errExit("invalid pin\n");
 	if (!gpio_cxt[IO].mraa_cxt) {
 		errExit("read from uninitialized gpio");
 	}
