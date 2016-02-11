@@ -164,6 +164,8 @@ int current_read = 0;
 //=============================ROUTINES=============================
 //===========================================================================
 
+bool setTargetedHotend(int code);
+
 //block all signals to imitate disabling interrupts
 inline void
 cli()
@@ -646,6 +648,104 @@ void process_commands()
       break;
     }
   }
+
+  else if(code_seen('M'))
+  {
+    switch( (int)code_value() )
+    {
+    case 109:
+    {// M109 - Wait for extruder heater to reach target.
+      if(setTargetedHotend(109)){
+        break;
+      }
+      //LCD_MESSAGEPGM(MSG_HEATING);
+      #ifdef AUTOTEMP
+        autotemp_enabled=false;
+      #endif
+      if (code_seen('S')) {
+        setTargetHotend(code_value(), tmp_extruder);
+#ifdef DUAL_X_CARRIAGE
+        if (dual_x_carriage_mode == DXC_DUPLICATION_MODE && tmp_extruder == 0)
+          setTargetHotend1(code_value() == 0.0 ? 0.0 : code_value() + duplicate_extruder_temp_offset);
+#endif          
+        CooldownNoWait = true;
+      } else if (code_seen('R')) {
+        setTargetHotend(code_value(), tmp_extruder);
+#ifdef DUAL_X_CARRIAGE
+        if (dual_x_carriage_mode == DXC_DUPLICATION_MODE && tmp_extruder == 0)
+          setTargetHotend1(code_value() == 0.0 ? 0.0 : code_value() + duplicate_extruder_temp_offset);
+#endif          
+        CooldownNoWait = false;
+      }
+      #ifdef AUTOTEMP
+        if (code_seen('S')) autotemp_min=code_value();
+        if (code_seen('B')) autotemp_max=code_value();
+        if (code_seen('F'))
+        {
+          autotemp_factor=code_value();
+          autotemp_enabled=true;
+        }
+      #endif
+
+      setWatch();
+      codenum = millis();
+
+      /* See if we are heating up or cooling down */
+      target_direction = isHeatingHotend(tmp_extruder); // true if heating, false if cooling
+
+      #ifdef TEMP_RESIDENCY_TIME
+        long residencyStart;
+        residencyStart = -1;
+        /* continue to loop until we have reached the target temp
+          _and_ until TEMP_RESIDENCY_TIME hasn't passed since we reached it */
+        while((residencyStart == -1) ||
+              (residencyStart >= 0 && (((unsigned int) (millis() - residencyStart)) < (TEMP_RESIDENCY_TIME * 1000UL))) ) {
+      #else
+        while ( target_direction ? (isHeatingHotend(tmp_extruder)) : (isCoolingHotend(tmp_extruder)&&(CooldownNoWait==false)) ) {
+      #endif //TEMP_RESIDENCY_TIME
+          if( (millis() - codenum) > 1000UL )
+          { //Print Temp Reading and remaining time every 1 second while heating up/cooling down
+            SERIAL_PROTOCOLPGM("T:");
+            SERIAL_PROTOCOL_F(degHotend(tmp_extruder),1);
+            SERIAL_PROTOCOLPGM(" E:");
+            SERIAL_PROTOCOL((int)tmp_extruder);
+            #ifdef TEMP_RESIDENCY_TIME
+              SERIAL_PROTOCOLPGM(" W:");
+              if(residencyStart > -1)
+              {
+                 codenum = ((TEMP_RESIDENCY_TIME * 1000UL) - (millis() - residencyStart)) / 1000UL;
+                 SERIAL_PROTOCOLLN( codenum );
+              }
+              else
+              {
+                 SERIAL_PROTOCOLLN( "?" );
+              }
+            #else
+              SERIAL_PROTOCOLLN("");
+            #endif
+            codenum = millis();
+          }
+          manage_heater();
+          manage_inactivity();
+          //lcd_update();
+        #ifdef TEMP_RESIDENCY_TIME
+            /* start/restart the TEMP_RESIDENCY_TIME timer whenever we reach target temp for the first time
+              or when current temp falls outside the hysteresis after target temp was reached */
+          if ((residencyStart == -1 &&  target_direction && (degHotend(tmp_extruder) >= (degTargetHotend(tmp_extruder)-TEMP_WINDOW))) ||
+              (residencyStart == -1 && !target_direction && (degHotend(tmp_extruder) <= (degTargetHotend(tmp_extruder)+TEMP_WINDOW))) ||
+              (residencyStart > -1 && labs(degHotend(tmp_extruder) - degTargetHotend(tmp_extruder)) > TEMP_HYSTERESIS) )
+          {
+            residencyStart = millis();
+          }
+        #endif //TEMP_RESIDENCY_TIME
+        }
+        //LCD_MESSAGEPGM(MSG_HEATING_COMPLETE);
+        starttime=millis();
+        previous_millis_cmd = millis();
+      }
+      break;
+    }
+  }
 }
 
 void get_coordinates()
@@ -761,5 +861,31 @@ void manage_inactivity()
   check_axes_activity();
 }
 
+bool setTargetedHotend(int code){
+  tmp_extruder = active_extruder;
+  if(code_seen('T')) {
+    tmp_extruder = code_value();
+    if(tmp_extruder >= EXTRUDERS) {
+      SERIAL_ECHO_START;
+      switch(code){
+        case 104:
+          SERIAL_ECHO(MSG_M104_INVALID_EXTRUDER);
+          break;
+        case 105:
+          SERIAL_ECHO(MSG_M105_INVALID_EXTRUDER);
+          break;
+        case 109:
+          SERIAL_ECHO(MSG_M109_INVALID_EXTRUDER);
+          break;
+        case 218:
+          SERIAL_ECHO(MSG_M218_INVALID_EXTRUDER);
+          break;
+      }
+      SERIAL_ECHOLN(tmp_extruder);
+      return true;
+    }
+  }
+  return false;
+}
 
 /* vi: set et sw=2 sts=2: */
