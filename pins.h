@@ -1553,15 +1553,7 @@
 	#define FAN_PIN        24  // Fan
 #endif
 
-#if MOTHERBOARD == 8  // Teensylu
-  #define X_STOP_PIN         13
-  #define Y_STOP_PIN         14
-  #define Z_STOP_PIN         15
-  #define TEMP_0_PIN          7  // Extruder / Analog pin numbering
-  #define TEMP_BED_PIN        6  // Bed / Analog pin numbering
-  #define E1_STEP_PIN        24
-  #define E1_DIR_PIN         25
-#elif MOTHERBOARD == 84 //Printrboard rev F
+#if MOTHERBOARD == 84 //Printrboard rev F
 	//TODO
   #define X_STOP_PIN         21
   #define Y_STOP_PIN         23
@@ -1571,16 +1563,6 @@
   //#define SDSS               20
   //#define E1_STEP_PIN        13
   //#define E1_DIR_PIN         37
-#else  // Printrboard rev A to E
-  #define X_STOP_PIN         35
-  #define Y_STOP_PIN          8
-  #define Z_STOP_PIN         36
-  #define TEMP_0_PIN          1  // Extruder / Analog pin numbering
-  #define TEMP_BED_PIN        0  // Bed / Analog pin numbering
-  #define SDSS               26
-  #define E1_STEP_PIN        24
-  #define E1_DIR_PIN         25
-
 #endif
 
 //#define TEMP_1_PIN         2

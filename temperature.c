@@ -30,6 +30,7 @@
 
 #include <signal.h>
 #include <time.h>
+#include <inttypes.h>
 #include "Marlin.h"
 #include "temperature.h"
 #include "thermistortables.h"
@@ -1121,6 +1122,10 @@ handler(int sig, siginfo_t *si, void *uc)
   pwm_count += (1 << SOFT_PWM_SCALE);
   pwm_count &= 0x7f;
   
+  uint8_t cmd = 0x80, res[2];
+  uint16_t final_res;
+  extern mraa_i2c_context temp_sensor;
+
   switch(temp_state) {
     case 0: // Prepare TEMP_0
       #if defined(TEMP_0_PIN) && (TEMP_0_PIN > -1)
@@ -1148,6 +1153,15 @@ handler(int sig, siginfo_t *si, void *uc)
         //i2c_write(TEMP_0_ADDR /*0x90*/, 0x80);
         //char temp_data[2];
         //i2c_read(TEMP_0_ADDR /*0x91*/, &temp_data, 2);
+      if (mraa_i2c_write_byte(temp_sensor, cmd) != MRAA_SUCCESS)
+        errExit("mraa_i2c_write_byte");
+      mraa_i2c_read(temp_sensor, &res[0], 2);
+      final_res = res[0];
+      final_res = final_res << 8;
+      final_res |= res[1];
+      DEBUG_PRINT("read word: %u\n", final_res);
+      raw_temp_0_value += final_res >> 2;
+
       #endif
       #ifdef HEATER_0_USES_MAX6675 // TODO remove the blocking
         raw_temp_0_value = read_max6675();

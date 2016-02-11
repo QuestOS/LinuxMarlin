@@ -9,6 +9,7 @@
 #include <mraa.h>
 
 #define NGPIO 26
+#define ADC_ADDRESS 0x48
 
 struct gpio_context {
 	mraa_gpio_context mraa_cxt;
@@ -16,7 +17,7 @@ struct gpio_context {
 	int linux_mapping;
 };
 
-extern struct gpio_context gpio_cxt[NGPIO];
+extern struct gpio_context gpio_cxt[NGPIO+1];
 
 void WRITE(unsigned IO, int v);
 int READ(unsigned IO); 
