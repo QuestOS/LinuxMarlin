@@ -2,7 +2,7 @@
 #include "fastio.h"
 #include <string.h>
 
-struct gpio_context gpio_cxt[NGPIO];
+struct gpio_context gpio_cxt[NGPIO+1];
 mraa_i2c_context temp_sensor;
 
 static const int minnowmax_pin_mapping[NGPIO+1] = {

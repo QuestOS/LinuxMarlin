@@ -17,7 +17,7 @@ struct gpio_context {
 	int linux_mapping;
 };
 
-extern struct gpio_context gpio_cxt[NGPIO];
+extern struct gpio_context gpio_cxt[NGPIO+1];
 
 void WRITE(unsigned IO, int v);
 int READ(unsigned IO); 
