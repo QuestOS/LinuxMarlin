@@ -54,8 +54,8 @@
 #include "Marlin.h"
 #include "planner.h"
 #include "stepper.h"
-//#include "temperature.h"
-//#include "language.h"
+#include "temperature.h"
+#include "language.h"
 
 //===========================================================================
 //=============================public variables ============================
@@ -531,8 +531,7 @@ void plan_buffer_line(float x, float y, float z, const float e, float feed_rate,
   while(block_buffer_tail == next_buffer_head)
   {
     //DEBUG_PRINT("block buffer full\n");
-    //TODO
-    //manage_heater(); 
+    manage_heater(); 
     manage_inactivity(); 
     //lcd_update();
   }

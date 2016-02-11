@@ -682,9 +682,8 @@ void st_init()
 void st_synchronize()
 {
   while( blocks_queued()) {
-    //TODO
-    //manage_heater();
-    //manage_inactivity();
+    manage_heater();
+    manage_inactivity();
     //lcd_update();
   }
 }
@@ -723,7 +722,6 @@ float st_get_position_mm(uint8_t axis)
 }
 #endif  // ENABLE_AUTO_BED_LEVELING
 
-/*
 void finishAndDisableSteppers()
 {
   st_synchronize();
@@ -734,7 +732,6 @@ void finishAndDisableSteppers()
   disable_e1();
   disable_e2();
 }
-*/
 
 void quickStop()
 {

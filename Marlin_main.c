@@ -654,6 +654,68 @@ void process_commands()
   {
     switch( (int)code_value() )
     {
+    case 82:
+      axis_relative_modes[3] = false;
+      break;
+    case 83:
+      axis_relative_modes[3] = true;
+      break;
+    case 18: //compatibility
+    case 84: // M84
+      if(code_seen('S')){
+        stepper_inactive_time = code_value() * 1000;
+      }
+      else
+      {
+        bool all_axis = !((code_seen(axis_codes[0])) || (code_seen(axis_codes[1])) || (code_seen(axis_codes[2]))|| (code_seen(axis_codes[3])));
+        if(all_axis)
+        {
+          st_synchronize();
+          disable_e0();
+          disable_e1();
+          disable_e2();
+          finishAndDisableSteppers();
+        }
+        else
+        {
+          st_synchronize();
+          if(code_seen('X')) disable_x();
+          if(code_seen('Y')) disable_y();
+          if(code_seen('Z')) disable_z();
+          #if ((E0_ENABLE_PIN != X_ENABLE_PIN) && (E1_ENABLE_PIN != Y_ENABLE_PIN)) // Only enable on boards that have seperate ENABLE_PINS
+            if(code_seen('E')) {
+              disable_e0();
+              disable_e1();
+              disable_e2();
+            }
+          #endif
+        }
+      }
+      break;
+    case 104: // M104
+      if(setTargetedHotend(104)){
+        break;
+      }
+      if (code_seen('S')) setTargetHotend(code_value(), tmp_extruder);
+#ifdef DUAL_X_CARRIAGE
+      if (dual_x_carriage_mode == DXC_DUPLICATION_MODE && tmp_extruder == 0)
+        setTargetHotend1(code_value() == 0.0 ? 0.0 : code_value() + duplicate_extruder_temp_offset);
+#endif          
+      setWatch();
+      break;
+    #if defined(FAN_PIN) && FAN_PIN > -1
+      case 106: //M106 Fan On
+        if (code_seen('S')){
+           fanSpeed=constrain(code_value(),0,255);
+        }
+        else {
+          fanSpeed=255;
+        }
+        break;
+      case 107: //M107 Fan Off
+        fanSpeed = 0;
+        break;
+    #endif //FAN_PIN
     case 109:
     {// M109 - Wait for extruder heater to reach target.
       if(setTargetedHotend(109)){
@@ -694,16 +756,12 @@ void process_commands()
       /* See if we are heating up or cooling down */
       target_direction = isHeatingHotend(tmp_extruder); // true if heating, false if cooling
 
-      #ifdef TEMP_RESIDENCY_TIME
         long residencyStart;
         residencyStart = -1;
         /* continue to loop until we have reached the target temp
           _and_ until TEMP_RESIDENCY_TIME hasn't passed since we reached it */
         while((residencyStart == -1) ||
               (residencyStart >= 0 && (((unsigned int) (millis() - residencyStart)) < (TEMP_RESIDENCY_TIME * 1000UL))) ) {
-      #else
-        while ( target_direction ? (isHeatingHotend(tmp_extruder)) : (isCoolingHotend(tmp_extruder)&&(CooldownNoWait==false)) ) {
-      #endif //TEMP_RESIDENCY_TIME
           if( (millis() - codenum) > 1000UL )
           { //Print Temp Reading and remaining time every 1 second while heating up/cooling down
             SERIAL_PROTOCOLPGM("T:");
@@ -744,6 +802,15 @@ void process_commands()
         starttime=millis();
         previous_millis_cmd = millis();
       }
+      break;
+    case 117:
+      starpos = (strchr(strchr_pointer + 5,'*'));
+      if(starpos!=NULL)
+        *(starpos-1)='\0';
+      //lcd_setstatus(strchr_pointer + 5);
+      break;
+    case 140: // M140 set bed temp
+      if (code_seen('S')) setTargetBed(code_value());
       break;
     }
   }
