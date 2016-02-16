@@ -41,7 +41,7 @@
 //===========================================================================
 block_t *current_block;  // A pointer to the block currently being traced
 
-int timerid;
+static int timerid;
 #define ENABLE_STEPPER_DRIVER_INTERRUPT()   enable_timer(timerid)
 #define DISABLE_STEPPER_DRIVER_INTERRUPT()  disable_timer(timerid)
 
