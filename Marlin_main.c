@@ -313,10 +313,9 @@ void loop(int fd)
     }
 
     //check heater every n milliseconds
-    //TODO
     manage_heater();
     manage_inactivity();
-    //checkHitEndstops();
+    checkHitEndstops();
   }
 }
 
@@ -660,15 +659,9 @@ void homing()
       st_synchronize();
       HOMEAXIS(Z);
     } else if (!((axis_known_position[X_AXIS]) && (axis_known_position[Y_AXIS]))) {
-      //TODO
-      //LCD_MESSAGEPGM(MSG_POSITION_UNKNOWN);
-      //SERIAL_ECHO_START;
-      //SERIAL_ECHOLNPGM(MSG_POSITION_UNKNOWN);
+      fprintf(stderr, "Homeing: Position Unknown\n");
     } else {
-      //TODO
-      //LCD_MESSAGEPGM(MSG_ZPROBE_OUT);
-      //SERIAL_ECHO_START;
-      //SERIAL_ECHOLNPGM(MSG_ZPROBE_OUT);
+      fprintf(stderr, "Homeing: Zprobe Out\n");
       }
     }
   #endif
