@@ -1,6 +1,6 @@
 #include "Marlin.h"
 #include "planner.h"
-//#include "temperature.h"
+#include "temperature.h"
 //#include "ultralcd.h"
 #include "ConfigurationStore.h"
 
@@ -324,10 +324,6 @@ void Config_ResetDefault()
 #ifdef DOGLCD
     lcd_contrast = DEFAULT_LCD_CONTRAST;
 #endif
-/*
- * XXX: --TOM-- comment this out
- * before temp control is added 
- *
 #ifdef PIDTEMP
     Kp = DEFAULT_Kp;
     Ki = scalePID_i(DEFAULT_Ki);
@@ -340,7 +336,6 @@ void Config_ResetDefault()
     Kc = DEFAULT_Kc;
 #endif//PID_ADD_EXTRUSION_RATE
 #endif//PIDTEMP
-*/
 
 	base_min_pos[0] = X_MIN_POS_DEFAULT;
 	base_min_pos[1] = Y_MIN_POS_DEFAULT;
