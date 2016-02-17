@@ -31,15 +31,35 @@ vector_3* vector_3_init_3(float x, float y, float z)
   return v;
 }
 
+void vector_3_get_normal(vector_3 *v)
+{
+  vector_3_normalize(v);
+}
+
+float vector_3_get_length(vector_3 *v)
+{
+  float length = sqrt((v->x * v->x) + (v->y * v->y) 
+                      + (v->z * v->z));
+  return length;
+}
+
+void vector_3_normalize(vector_3 *v)
+{
+  float length = vector_3_get_length(v);
+  v->x /= length;
+  v->y /= length;
+  v->z /= length;
+}
+
 void vector_3_apply_rotation(vector_3 *v, matrix_3x3 matrix)
 {
-	float resultX = v->x * matrix.matrix[3*0+0] + v->y * matrix.matrix[3*1+0] + v->z * matrix.matrix[3*2+0];
-	float resultY = v->x * matrix.matrix[3*0+1] + v->y * matrix.matrix[3*1+1] + v->z * matrix.matrix[3*2+1];
-	float resultZ = v->x * matrix.matrix[3*0+2] + v->y * matrix.matrix[3*1+2] + v->z * matrix.matrix[3*2+2];
-
-	v->x = resultX;
-	v->y = resultY;
-	v->z = resultZ;
+  float resultX = v->x * matrix.matrix[3*0+0] + v->y * matrix.matrix[3*1+0] + v->z * matrix.matrix[3*2+0];
+  float resultY = v->x * matrix.matrix[3*0+1] + v->y * matrix.matrix[3*1+1] + v->z * matrix.matrix[3*2+1];
+  float resultZ = v->x * matrix.matrix[3*0+2] + v->y * matrix.matrix[3*1+2] + v->z * matrix.matrix[3*2+2];
+  
+  v->x = resultX;
+  v->y = resultY;
+  v->z = resultZ;
 }
 
 void matrix_3x3_set_to_identity(matrix_3x3 *m)
@@ -51,11 +71,11 @@ void matrix_3x3_set_to_identity(matrix_3x3 *m)
 
 void apply_rotation_xyz(matrix_3x3 matrix, float *x, float *y, float *z)
 {
-	vector_3 *vector = vector_3_init_3(*x, *y, *z);
+  vector_3 *vector = vector_3_init_3(*x, *y, *z);
   vector_3_apply_rotation(vector, matrix);
-	*x = vector->x;
-	*y = vector->y;
-	*z = vector->z;
+  *x = vector->x;
+  *y = vector->y;
+  *z = vector->z;
 }
 
 matrix_3x3 matrix_3x3_transpose(matrix_3x3 original)

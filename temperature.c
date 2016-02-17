@@ -1150,9 +1150,6 @@ handler(int sig, siginfo_t *si, void *uc)
       /* --YY-- */
         //raw_temp_0_value += ADC;
         //start/read data
-        //i2c_write(TEMP_0_ADDR /*0x90*/, 0x80);
-        //char temp_data[2];
-        //i2c_read(TEMP_0_ADDR /*0x91*/, &temp_data, 2);
       if (mraa_i2c_write_byte(temp_sensor, cmd) != MRAA_SUCCESS)
         errExit("mraa_i2c_write_byte");
       mraa_i2c_read(temp_sensor, &res[0], 2);
