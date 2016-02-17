@@ -237,7 +237,7 @@ int main(int argc, char *argv[]) {
 
   int file = setup(argv[1]);
 
-  loop(file);
+  while (1) loop(file);
 
   return 0;
 }
@@ -305,18 +305,16 @@ int setup(char *path)
 
 void loop(int fd)
 {
-  while (1) {
-    if (get_command()) {
-      DEBUG_PRINT("==========================================\n");
-      DEBUG_PRINT("%s\n", cmdbuffer);
-      process_commands();
-    }
-
-    //check heater every n milliseconds
-    manage_heater();
-    manage_inactivity();
-    checkHitEndstops();
+  if (get_command()) {
+    DEBUG_PRINT("==========================================\n");
+    DEBUG_PRINT("%s\n", cmdbuffer);
+    process_commands();
   }
+
+  //check heater every n milliseconds
+  manage_heater();
+  manage_inactivity();
+  checkHitEndstops();
 }
 
 static void run_z_probe() {
@@ -361,17 +359,25 @@ static void clean_up_after_endstop_move() {
 static void set_bed_level_equation(float z_at_xLeft_yFront, float z_at_xRight_yFront, float z_at_xLeft_yBack) {
     matrix_3x3_set_to_identity(&plan_bed_level_matrix);
 
-    vector_3 xLeftyFront = vector_3(LEFT_PROBE_BED_POSITION, FRONT_PROBE_BED_POSITION, z_at_xLeft_yFront);
-    vector_3 xLeftyBack = vector_3(LEFT_PROBE_BED_POSITION, BACK_PROBE_BED_POSITION, z_at_xLeft_yBack);
-    vector_3 xRightyFront = vector_3(RIGHT_PROBE_BED_POSITION, FRONT_PROBE_BED_POSITION, z_at_xRight_yFront);
+    vector_3 xLeftyFront;
+    vector_3_init_3(&xLeftyFront, LEFT_PROBE_BED_POSITION, FRONT_PROBE_BED_POSITION, z_at_xLeft_yFront);
+    vector_3 xLeftyBack;
+    vector_3_init_3(&xLeftyBack, LEFT_PROBE_BED_POSITION, BACK_PROBE_BED_POSITION, z_at_xLeft_yBack);
+    vector_3 xRightyFront;
+    vector_3_init_3(&xRightyFront, RIGHT_PROBE_BED_POSITION, FRONT_PROBE_BED_POSITION, z_at_xRight_yFront);
 
-    vector_3 xPositive = (xRightyFront - xLeftyFront).get_normal();
-    vector_3 yPositive = (xLeftyBack - xLeftyFront).get_normal();
-    vector_3 planeNormal = vector_3::cross(xPositive, yPositive).get_normal();
+    vector_3 xPositive, yPositive;
+    vector_3_sub(&xRightyFront, &xLeftyFront, &xPositive);
+    vector_3_get_normal(&xPositive);
+    vector_3_sub(&xLeftyBack, &xLeftyFront, &yPositive);
+    vector_3_get_normal(&yPositive);
+    vector_3 planeNormal;
+    vector_3_cross(&xPositive, &yPositive, &planeNormal);
+    vector_3_get_normal(&planeNormal);
 
     //planeNormal.debug("planeNormal");
     //yPositive.debug("yPositive");
-    plan_bed_level_matrix = matrix_3x3::create_look_at(planeNormal);
+    plan_bed_level_matrix = matrix_3x3_create_look_at(planeNormal);
     //bedLevel.debug("bedLevel");
 
     //plan_bed_level_matrix.debug("bed level before");
@@ -801,11 +807,12 @@ void process_commands()
             y_tmp = current_position[Y_AXIS] + bed_level_probe_offset[1];
             z_tmp = current_position[Z_AXIS];
 
-            apply_rotation_xyz(plan_bed_level_matrix, x_tmp, y_tmp, z_tmp);         //Apply the correction sending the probe offset
+            apply_rotation_xyz(plan_bed_level_matrix, &x_tmp, &y_tmp, &z_tmp);         //Apply the correction sending the probe offset
             current_position[Z_AXIS] = z_tmp - real_z + current_position[Z_AXIS];   //The difference is added to current position and sent to planner.
             plan_set_position(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS]);
         }
         break;
+    #endif
     case 90: // G90
       relative_mode = false;
       break;

@@ -134,7 +134,7 @@ static FORCE_INLINE block_t *plan_get_current_block()
 void plan_buffer_line(float x, float y, float z, const float e, float feed_rate, const uint8_t extruder);
 
 // Get the position applying the bed level matrix if enabled
-//vector_3 plan_get_position();
+vector_3 plan_get_position();
 
 // Set position. Used for G92 instructions.
 void plan_set_position(float x, float y, float z, const float e);

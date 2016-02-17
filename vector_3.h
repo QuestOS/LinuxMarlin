@@ -30,12 +30,17 @@ typedef struct _vector_3
   float x, y, z;
 } vector_3;
 
-vector_3 *vector_3_init_3(float x, float y, float z);
+void vector_3_init_3(vector_3 *v, float x, float y, float z);
+void vector_3_cross(vector_3 *l, vector_3 *r, vector_3 *result);
+void vector_3_sub(vector_3 *l, vector_3 *r, vector_3 *result);
 void vector_3_get_normal(vector_3 *v);
 float vector_3_get_length(vector_3 *v);
 void vector_3_normalize(vector_3 *v);
 void vector_3_apply_rotation(vector_3 *v, matrix_3x3 matrix);
 void matrix_3x3_set_to_identity(matrix_3x3 *m);
+void matrix_3x3_create_from_rows(matrix_3x3 *new_matrix, vector_3 row_0, 
+                                vector_3 row_1, vector_3 row_2);
+matrix_3x3 matrix_3x3_create_look_at(vector_3 target);
 void apply_rotation_xyz(matrix_3x3 rotationMatrix, float *x, float *y, float *z);
 matrix_3x3 matrix_3x3_transpose(matrix_3x3 original);
 #endif
