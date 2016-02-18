@@ -802,7 +802,7 @@ void process_commands()
             // The following code correct the Z height difference from z-probe position and hotend tip position.
             // The Z height on homing is measured by Z-Probe, but the probe is quite far from the hotend. 
             // When the bed is uneven, this height must be corrected.
-            real_z = float(st_get_position(Z_AXIS))/axis_steps_per_unit[Z_AXIS];  //get the real Z (since the auto bed leveling is already correcting the plane)
+            real_z = ((float)st_get_position(Z_AXIS))/axis_steps_per_unit[Z_AXIS];  //get the real Z (since the auto bed leveling is already correcting the plane)
             x_tmp = current_position[X_AXIS] + bed_level_probe_offset[0];
             y_tmp = current_position[Y_AXIS] + bed_level_probe_offset[1];
             z_tmp = current_position[Z_AXIS];
@@ -997,9 +997,6 @@ void process_commands()
       if(starpos!=NULL)
         *(starpos-1)='\0';
       //lcd_setstatus(strchr_pointer + 5);
-      break;
-    case 140: // M140 set bed temp
-      if (code_seen('S')) setTargetBed(code_value());
       break;
     }
   }
