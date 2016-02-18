@@ -83,7 +83,7 @@ void WRITE(unsigned IO, int v)
 
 int READ(unsigned IO)
 {
-	DEBUG_PRINT("reading from pin %s\n", gpio_cxt[IO].pin_name);
+	//DEBUG_PRINT("reading from pin %s\n", gpio_cxt[IO].pin_name);
   if (IO > NGPIO) 
     errExit("invalid pin\n");
 	if (!gpio_cxt[IO].mraa_cxt) {
