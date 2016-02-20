@@ -125,7 +125,10 @@ void analogWrite(int pin, int val)
     mraa_pwm_period_us(pwm_cxt, 1);
     mraa_pwm_enable(pwm_cxt, 1);
   }
-  mraa_pwm_write(pwm_cxt, (float)val / (float)255);
+  
+  //mraa_pwm_write(pwm_cxt, (float)val / (float)255);
+  //A hack to invert the logic to conform to the hardware setup
+  mraa_pwm_write(pwm_cxt, (1 - (float)val / (float)255));
 }
 
 void delay(unsigned long time)

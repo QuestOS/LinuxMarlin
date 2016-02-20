@@ -366,7 +366,7 @@ void disable_heater()
   target_temperature[0]=0;
   soft_pwm[0]=0;
    #if defined(HEATER_0_PIN) && HEATER_0_PIN > -1  
-     WRITE(HEATER_0_PIN,LOW);
+     write_heater(0);
    #endif
   #endif
 }
@@ -391,6 +391,15 @@ void min_temp_error(uint8_t e) {
   #endif
 }
 
+//A hack to invert the logic to conform to the hardware setup
+void write_heater(int val)
+{
+  if (val == 0)
+    WRITE(HEATER_0_PIN,1);
+  else 
+    WRITE(HEATER_0_PIN,0);
+}
+
 // Timer 0 is shared with millis
 //ISR(TIMER0_COMPB_vect)
 static void
@@ -407,13 +416,12 @@ handler(int sig, siginfo_t *si, void *uc)
   if(pwm_count == 0){
     soft_pwm_0 = soft_pwm[0];
     if(soft_pwm_0 > 0) 
-      WRITE(HEATER_0_PIN,1);
+      write_heater(1);
     else
-      WRITE(HEATER_0_PIN,0);
-	
+      write_heater(0);
   }
   if(soft_pwm_0 < pwm_count)
-    WRITE(HEATER_0_PIN,0);
+    write_heater(0);
   
   pwm_count += (1 << SOFT_PWM_SCALE);
   pwm_count &= 0x7f;
