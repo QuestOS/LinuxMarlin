@@ -351,7 +351,7 @@ static void handler(void)
     // Set directions TO DO This should be done once during init of trapezoid. Endstops -> interrupt
     out_bits = current_block->direction_bits;
 
-    // Set the direction bits (X_AXIS=A_AXIS and Y_AXIS=B_AXIS for COREXY)
+    // Set the direction bits 
     if((out_bits & (1<<X_AXIS))!=0){
       WRITE(X_DIR_PIN, INVERT_X_DIR);
       count_direction[X_AXIS]=-1;
@@ -373,8 +373,15 @@ static void handler(void)
       WRITE(Z_DIR_PIN,!INVERT_Z_DIR);
       count_direction[Z_AXIS]=1;
     }
+    if ((out_bits & (1<<E_AXIS)) != 0) {  // -direction
+      REV_E_DIR();
+      count_direction[E_AXIS]=-1;
+    } else { // +direction
+      NORM_E_DIR();
+      count_direction[E_AXIS]=1;
+    }
 
-    // Set direction en check limit switches
+    // check limit switches
     if (check_endstops) {
       if ((out_bits & (1<<X_AXIS)) != 0) {   // stepping along -X axis
         #if defined(X_MIN_PIN) && X_MIN_PIN > -1
@@ -452,16 +459,7 @@ static void handler(void)
       }
     }
 
-    if ((out_bits & (1<<E_AXIS)) != 0) {  // -direction
-      REV_E_DIR();
-      count_direction[E_AXIS]=-1;
-    }
-    else { // +direction
-      NORM_E_DIR();
-      count_direction[E_AXIS]=1;
-    }
-
-
+    //generate pulse to drive steppers
     int8_t i;
     for(i=0; i < step_loops; i++) { // Take multiple steps per interrupt (For high speed moves)
       #ifndef AT90USB
@@ -504,6 +502,7 @@ static void handler(void)
       step_events_completed += 1;
       if(step_events_completed >= current_block->step_event_count) break;
     }
+
     // Calculare new timer value
     unsigned short timer;
     unsigned short step_rate;
