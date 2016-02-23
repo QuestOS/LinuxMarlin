@@ -452,16 +452,14 @@ static void handler(void)
       }
     }
 
-    #ifndef ADVANCE
-      if ((out_bits & (1<<E_AXIS)) != 0) {  // -direction
-        REV_E_DIR();
-        count_direction[E_AXIS]=-1;
-      }
-      else { // +direction
-        NORM_E_DIR();
-        count_direction[E_AXIS]=1;
-      }
-    #endif //!ADVANCE
+    if ((out_bits & (1<<E_AXIS)) != 0) {  // -direction
+      REV_E_DIR();
+      count_direction[E_AXIS]=-1;
+    }
+    else { // +direction
+      NORM_E_DIR();
+      count_direction[E_AXIS]=1;
+    }
 
 
     int8_t i;
@@ -470,22 +468,22 @@ static void handler(void)
       MSerial.checkRx(); // Check for serial chars.
       #endif
 
-        counter_x += current_block->steps_x;
-        if (counter_x > 0) {
-          WRITE(X_STEP_PIN, !INVERT_X_STEP_PIN);
-          counter_x -= current_block->step_event_count;
-          count_position[X_AXIS]+=count_direction[X_AXIS];   
-          WRITE(X_STEP_PIN, INVERT_X_STEP_PIN);
-        }
+      counter_x += current_block->steps_x;
+      if (counter_x > 0) {
+        WRITE(X_STEP_PIN, !INVERT_X_STEP_PIN);
+        counter_x -= current_block->step_event_count;
+        count_position[X_AXIS]+=count_direction[X_AXIS];   
+        WRITE(X_STEP_PIN, INVERT_X_STEP_PIN);
+      }
 
-        counter_y += current_block->steps_y;
-        if (counter_y > 0) {
-          WRITE(Y_STEP_PIN, !INVERT_Y_STEP_PIN);
-          counter_y -= current_block->step_event_count;
-          count_position[Y_AXIS]+=count_direction[Y_AXIS];
-          WRITE(Y_STEP_PIN, INVERT_Y_STEP_PIN);
+      counter_y += current_block->steps_y;
+      if (counter_y > 0) {
+        WRITE(Y_STEP_PIN, !INVERT_Y_STEP_PIN);
+        counter_y -= current_block->step_event_count;
+        count_position[Y_AXIS]+=count_direction[Y_AXIS];
+        WRITE(Y_STEP_PIN, INVERT_Y_STEP_PIN);
 		  
-        }
+      }
 
       counter_z += current_block->steps_z;
       if (counter_z > 0) {
@@ -496,15 +494,13 @@ static void handler(void)
         
       }
 
-      #ifndef ADVANCE
-        counter_e += current_block->steps_e;
-        if (counter_e > 0) {
-          WRITE_E_STEP(!INVERT_E_STEP_PIN);
-          counter_e -= current_block->step_event_count;
-          count_position[E_AXIS]+=count_direction[E_AXIS];
-          WRITE_E_STEP(INVERT_E_STEP_PIN);
-        }
-      #endif //!ADVANCE
+      counter_e += current_block->steps_e;
+      if (counter_e > 0) {
+        WRITE_E_STEP(!INVERT_E_STEP_PIN);
+        counter_e -= current_block->step_event_count;
+        count_position[E_AXIS]+=count_direction[E_AXIS];
+        WRITE_E_STEP(INVERT_E_STEP_PIN);
+      }
       step_events_completed += 1;
       if(step_events_completed >= current_block->step_event_count) break;
     }
