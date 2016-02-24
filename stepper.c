@@ -462,10 +462,6 @@ static void handler(void)
     //generate pulse to drive steppers
     int8_t i;
     for(i=0; i < step_loops; i++) { // Take multiple steps per interrupt (For high speed moves)
-      #ifndef AT90USB
-      MSerial.checkRx(); // Check for serial chars.
-      #endif
-
       counter_x += current_block->steps_x;
       if (counter_x > 0) {
         WRITE(X_STEP_PIN, !INVERT_X_STEP_PIN);
@@ -503,7 +499,7 @@ static void handler(void)
       if(step_events_completed >= current_block->step_event_count) break;
     }
 
-    // Calculare new timer value
+    // Calculate new timer value
     unsigned short timer;
     unsigned short step_rate;
     if (step_events_completed <= (unsigned long int)current_block->accelerate_until) {
