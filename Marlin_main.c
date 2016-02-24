@@ -567,9 +567,10 @@ static void homeaxis(int axis) {
   }
 }
 
-void homing()
+void do_home()
 {
   int8_t i;
+
   DEBUG_PRINT("HOMING...\n");
 #ifdef ENABLE_AUTO_BED_LEVELING
   matrix_3x3_set_to_identity(&plan_bed_level_matrix);  //Reset the plane ("erase" all leveling data)
@@ -690,155 +691,256 @@ void homing()
   endstops_hit_on_purpose();
 }
 
-void process_commands()
+#ifdef ENABLE_AUTO_BED_LEVELING
+void do_auto_bed_leveling()
+{
+  float x_tmp, y_tmp, z_tmp, real_z;
+
+  #if Z_MIN_PIN == -1
+  #error "You must have a Z_MIN endstop in order to enable Auto Bed Leveling feature!!! Z_MIN_PIN must point to a valid hardware pin."
+  #endif
+
+  DEBUG_PRINT("AUTO BED LEVELING...\n");
+
+  st_synchronize();
+  // make sure the bed_level_rotation_matrix is identity or the planner will get it incorectly
+  //vector_3 corrected_position = plan_get_position_mm();
+  //corrected_position.debug("position before G29");
+  matrix_3x3_set_to_identity(&plan_bed_level_matrix);
+  vector_3 uncorrected_position = plan_get_position();
+  //uncorrected_position.debug("position durring G29");
+  current_position[X_AXIS] = uncorrected_position.x;
+  current_position[Y_AXIS] = uncorrected_position.y;
+  current_position[Z_AXIS] = uncorrected_position.z;
+  plan_set_position(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS]);
+  setup_for_endstop_move();
+
+  feedrate = homing_feedrate[Z_AXIS];
+  
+  // prob 1
+  do_blocking_move_to(current_position[X_AXIS], current_position[Y_AXIS], Z_RAISE_BEFORE_PROBING);
+  do_blocking_move_to(LEFT_PROBE_BED_POSITION - bed_level_probe_offset[0], BACK_PROBE_BED_POSITION - bed_level_probe_offset[1], current_position[Z_AXIS]);
+
+  //engage_z_probe();   // Engage Z Servo endstop if available
+  run_z_probe();
+  float z_at_xLeft_yBack = current_position[Z_AXIS];
+  //retract_z_probe();
+
+  SERIAL_PROTOCOLPGM("Bed x: ");
+  SERIAL_PROTOCOL(LEFT_PROBE_BED_POSITION);
+  SERIAL_PROTOCOLPGM(" y: ");
+  SERIAL_PROTOCOL(BACK_PROBE_BED_POSITION);
+  SERIAL_PROTOCOLPGM(" z: ");
+  SERIAL_PROTOCOL(current_position[Z_AXIS]);
+  SERIAL_PROTOCOLPGM("\n");
+
+  // prob 2
+  do_blocking_move_to(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS] + Z_RAISE_BETWEEN_PROBINGS);
+  do_blocking_move_to(LEFT_PROBE_BED_POSITION - bed_level_probe_offset[0], FRONT_PROBE_BED_POSITION - bed_level_probe_offset[1], current_position[Z_AXIS]);
+
+  //engage_z_probe();   // Engage Z Servo endstop if available
+  run_z_probe();
+  float z_at_xLeft_yFront = current_position[Z_AXIS];
+  //retract_z_probe();
+  
+  SERIAL_PROTOCOLPGM("Bed x: ");
+  SERIAL_PROTOCOL(LEFT_PROBE_BED_POSITION);
+  SERIAL_PROTOCOLPGM(" y: ");
+  SERIAL_PROTOCOL(FRONT_PROBE_BED_POSITION);
+  SERIAL_PROTOCOLPGM(" z: ");
+  SERIAL_PROTOCOL(current_position[Z_AXIS]);
+  SERIAL_PROTOCOLPGM("\n");
+
+  // prob 3
+  do_blocking_move_to(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS] + Z_RAISE_BETWEEN_PROBINGS);
+  // the current position will be updated by the blocking move so the head will not lower on this next call.
+  do_blocking_move_to(RIGHT_PROBE_BED_POSITION - bed_level_probe_offset[0], FRONT_PROBE_BED_POSITION - bed_level_probe_offset[1], current_position[Z_AXIS]);
+
+  //engage_z_probe();   // Engage Z Servo endstop if available
+  run_z_probe();
+  float z_at_xRight_yFront = current_position[Z_AXIS];
+  //retract_z_probe(); // Retract Z Servo endstop if available
+  
+  SERIAL_PROTOCOLPGM("Bed x: ");
+  SERIAL_PROTOCOL(RIGHT_PROBE_BED_POSITION);
+  SERIAL_PROTOCOLPGM(" y: ");
+  SERIAL_PROTOCOL(FRONT_PROBE_BED_POSITION);
+  SERIAL_PROTOCOLPGM(" z: ");
+  SERIAL_PROTOCOL(current_position[Z_AXIS]);
+  SERIAL_PROTOCOLPGM("\n");
+
+  clean_up_after_endstop_move();
+
+  set_bed_level_equation(z_at_xLeft_yFront, z_at_xRight_yFront, z_at_xLeft_yBack);
+
+  st_synchronize();            
+
+  // The following code correct the Z height difference from z-probe position and hotend tip position.
+  // The Z height on homing is measured by Z-Probe, but the probe is quite far from the hotend. 
+  // When the bed is uneven, this height must be corrected.
+  real_z = ((float)st_get_position(Z_AXIS))/axis_steps_per_unit[Z_AXIS];  //get the real Z (since the auto bed leveling is already correcting the plane)
+  x_tmp = current_position[X_AXIS] + bed_level_probe_offset[0];
+  y_tmp = current_position[Y_AXIS] + bed_level_probe_offset[1];
+  z_tmp = current_position[Z_AXIS];
+
+  apply_rotation_xyz(plan_bed_level_matrix, &x_tmp, &y_tmp, &z_tmp);         //Apply the correction sending the probe offset
+  current_position[Z_AXIS] = z_tmp - real_z + current_position[Z_AXIS];   //The difference is added to current position and sent to planner.
+  plan_set_position(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS]);
+}
+#endif
+
+void do_set_position()
+{
+  int8_t i;
+
+  do_set_position();
+  if(!code_seen(axis_codes[E_AXIS]))
+    st_synchronize();
+  for(i=0; i < NUM_AXIS; i++) {
+    if(code_seen(axis_codes[i])) {
+      if(i == E_AXIS) {
+        current_position[i] = code_value();
+        plan_set_e_position(current_position[E_AXIS]);
+      } else {
+        current_position[i] = code_value()+add_homeing[i];
+        plan_set_position(current_position[X_AXIS], current_position[Y_AXIS],
+            current_position[Z_AXIS], current_position[E_AXIS]);
+      }
+    }
+  }
+}
+
+// M109 - Wait for extruder heater to reach target.
+void set_temp_and_wait()
 {
   unsigned long codenum; //throw away variable
-  char *starpos = NULL;
-  int8_t i;
-#ifdef ENABLE_AUTO_BED_LEVELING
-  float x_tmp, y_tmp, z_tmp, real_z;
-#endif
-  if(code_seen('G'))
-  {
-    switch((int)code_value())
+
+  if(setTargetedHotend(109)){
+    return;
+  }
+  #ifdef AUTOTEMP
+    autotemp_enabled=false;
+  #endif
+  if (code_seen('S')) {
+    setTargetHotend(code_value(), tmp_extruder);
+  } else if (code_seen('R')) {
+    setTargetHotend(code_value(), tmp_extruder);
+  }
+  #ifdef AUTOTEMP
+    if (code_seen('S')) autotemp_min=code_value();
+    if (code_seen('B')) autotemp_max=code_value();
+    if (code_seen('F'))
     {
+      autotemp_factor=code_value();
+      autotemp_enabled=true;
+    }
+  #endif
+  
+  setWatch();
+  codenum = millis();
+  
+  /* See if we are heating up or cooling down */
+  target_direction = isHeatingHotend(tmp_extruder); // true if heating, false if cooling
+  
+  long residencyStart;
+  residencyStart = -1;
+  /* continue to loop until we have reached the target temp
+    _and_ until TEMP_RESIDENCY_TIME hasn't passed since we reached it */
+  while((residencyStart == -1) || (residencyStart >= 0 &&
+        (((unsigned int) (millis() - residencyStart)) < (TEMP_RESIDENCY_TIME * 1000UL))) ) {
+    if( (millis() - codenum) > 1000UL )
+    { //Print Temp Reading and remaining time every 1 second while heating up/cooling down
+      printf("Temperature of Extruder %d: %f\n", (int)tmp_extruder, degHotend(tmp_extruder));
+      if(residencyStart > -1)
+      {
+         codenum = ((TEMP_RESIDENCY_TIME * 1000UL) - (millis() - residencyStart)) / 1000UL;
+         printf("Remaining time to keep this temperature: %lu\n", codenum);
+      }
+      codenum = millis();
+    }
+    manage_heater();
+    manage_inactivity();
+      /* start/restart the TEMP_RESIDENCY_TIME timer whenever we reach target temp for the first time
+        or when current temp falls outside the hysteresis after target temp was reached */
+    if ((residencyStart == -1 &&  target_direction && (degHotend(tmp_extruder) >= (degTargetHotend(tmp_extruder)-TEMP_WINDOW))) ||
+        (residencyStart == -1 && !target_direction && (degHotend(tmp_extruder) <= (degTargetHotend(tmp_extruder)+TEMP_WINDOW))) ||
+        (residencyStart > -1 && labs(degHotend(tmp_extruder) - degTargetHotend(tmp_extruder)) > TEMP_HYSTERESIS) )
+    {
+      residencyStart = millis();
+    }
+  }
+  starttime=millis();
+  previous_millis_cmd = millis();
+}
+
+void stop_idle_hold()
+{
+  if(code_seen('S')){
+    stepper_inactive_time = code_value() * 1000;
+  } else {
+    bool all_axis = !((code_seen(axis_codes[0])) || (code_seen(axis_codes[1])) || (code_seen(axis_codes[2]))|| (code_seen(axis_codes[3])));
+    if(all_axis)
+    {
+      st_synchronize();
+      disable_e0();
+      disable_e1();
+      disable_e2();
+      finishAndDisableSteppers();
+    }
+    else
+    {
+      st_synchronize();
+      if(code_seen('X')) disable_x();
+      if(code_seen('Y')) disable_y();
+      if(code_seen('Z')) disable_z();
+      #if ((E0_ENABLE_PIN != X_ENABLE_PIN) && (E1_ENABLE_PIN != Y_ENABLE_PIN)) // Only enable on boards that have seperate ENABLE_PINS
+        if(code_seen('E')) {
+          disable_e0();
+          disable_e1();
+          disable_e2();
+        }
+      #endif
+    }
+  }
+}
+
+void process_commands()
+{
+  int8_t i;
+
+  if(code_seen('G')) {
+    switch((int)code_value()) {
     case 0: // G0 -> G1
     case 1: // G1
-      //DEBUG_PRINT("G0 or G1 found\n");
       if(Stopped == false) {
         get_coordinates(); // For X Y Z E F
         prepare_move();
-        //ClearToSend();
-        return;
       }
-      //break;
+      return;
     case 28: //G28 Home all Axis one at a time
-      homing();
+      do_home();
       return;
     #ifdef ENABLE_AUTO_BED_LEVELING
     case 29: // G29 Detailed Z-Probe, probes the bed at 3 points.
-        {
-            #if Z_MIN_PIN == -1
-            #error "You must have a Z_MIN endstop in order to enable Auto Bed Leveling feature!!! Z_MIN_PIN must point to a valid hardware pin."
-            #endif
-
-            st_synchronize();
-            // make sure the bed_level_rotation_matrix is identity or the planner will get it incorectly
-            //vector_3 corrected_position = plan_get_position_mm();
-            //corrected_position.debug("position before G29");
-            matrix_3x3_set_to_identity(&plan_bed_level_matrix);
-            vector_3 uncorrected_position = plan_get_position();
-            //uncorrected_position.debug("position durring G29");
-            current_position[X_AXIS] = uncorrected_position.x;
-            current_position[Y_AXIS] = uncorrected_position.y;
-            current_position[Z_AXIS] = uncorrected_position.z;
-            plan_set_position(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS]);
-            setup_for_endstop_move();
-
-            feedrate = homing_feedrate[Z_AXIS];
-            
-            // prob 1
-            do_blocking_move_to(current_position[X_AXIS], current_position[Y_AXIS], Z_RAISE_BEFORE_PROBING);
-            do_blocking_move_to(LEFT_PROBE_BED_POSITION - bed_level_probe_offset[0], BACK_PROBE_BED_POSITION - bed_level_probe_offset[1], current_position[Z_AXIS]);
-
-            //engage_z_probe();   // Engage Z Servo endstop if available
-            run_z_probe();
-            float z_at_xLeft_yBack = current_position[Z_AXIS];
-            //retract_z_probe();
-
-            SERIAL_PROTOCOLPGM("Bed x: ");
-            SERIAL_PROTOCOL(LEFT_PROBE_BED_POSITION);
-            SERIAL_PROTOCOLPGM(" y: ");
-            SERIAL_PROTOCOL(BACK_PROBE_BED_POSITION);
-            SERIAL_PROTOCOLPGM(" z: ");
-            SERIAL_PROTOCOL(current_position[Z_AXIS]);
-            SERIAL_PROTOCOLPGM("\n");
-
-            // prob 2
-            do_blocking_move_to(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS] + Z_RAISE_BETWEEN_PROBINGS);
-            do_blocking_move_to(LEFT_PROBE_BED_POSITION - bed_level_probe_offset[0], FRONT_PROBE_BED_POSITION - bed_level_probe_offset[1], current_position[Z_AXIS]);
-
-            //engage_z_probe();   // Engage Z Servo endstop if available
-            run_z_probe();
-            float z_at_xLeft_yFront = current_position[Z_AXIS];
-            //retract_z_probe();
-            
-            SERIAL_PROTOCOLPGM("Bed x: ");
-            SERIAL_PROTOCOL(LEFT_PROBE_BED_POSITION);
-            SERIAL_PROTOCOLPGM(" y: ");
-            SERIAL_PROTOCOL(FRONT_PROBE_BED_POSITION);
-            SERIAL_PROTOCOLPGM(" z: ");
-            SERIAL_PROTOCOL(current_position[Z_AXIS]);
-            SERIAL_PROTOCOLPGM("\n");
-
-            // prob 3
-            do_blocking_move_to(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS] + Z_RAISE_BETWEEN_PROBINGS);
-            // the current position will be updated by the blocking move so the head will not lower on this next call.
-            do_blocking_move_to(RIGHT_PROBE_BED_POSITION - bed_level_probe_offset[0], FRONT_PROBE_BED_POSITION - bed_level_probe_offset[1], current_position[Z_AXIS]);
-
-            //engage_z_probe();   // Engage Z Servo endstop if available
-            run_z_probe();
-            float z_at_xRight_yFront = current_position[Z_AXIS];
-            //retract_z_probe(); // Retract Z Servo endstop if available
-            
-            SERIAL_PROTOCOLPGM("Bed x: ");
-            SERIAL_PROTOCOL(RIGHT_PROBE_BED_POSITION);
-            SERIAL_PROTOCOLPGM(" y: ");
-            SERIAL_PROTOCOL(FRONT_PROBE_BED_POSITION);
-            SERIAL_PROTOCOLPGM(" z: ");
-            SERIAL_PROTOCOL(current_position[Z_AXIS]);
-            SERIAL_PROTOCOLPGM("\n");
-
-            clean_up_after_endstop_move();
-
-            set_bed_level_equation(z_at_xLeft_yFront, z_at_xRight_yFront, z_at_xLeft_yBack);
-
-            st_synchronize();            
-
-            // The following code correct the Z height difference from z-probe position and hotend tip position.
-            // The Z height on homing is measured by Z-Probe, but the probe is quite far from the hotend. 
-            // When the bed is uneven, this height must be corrected.
-            real_z = ((float)st_get_position(Z_AXIS))/axis_steps_per_unit[Z_AXIS];  //get the real Z (since the auto bed leveling is already correcting the plane)
-            x_tmp = current_position[X_AXIS] + bed_level_probe_offset[0];
-            y_tmp = current_position[Y_AXIS] + bed_level_probe_offset[1];
-            z_tmp = current_position[Z_AXIS];
-
-            apply_rotation_xyz(plan_bed_level_matrix, &x_tmp, &y_tmp, &z_tmp);         //Apply the correction sending the probe offset
-            current_position[Z_AXIS] = z_tmp - real_z + current_position[Z_AXIS];   //The difference is added to current position and sent to planner.
-            plan_set_position(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS]);
-        }
-        break;
+      do_auto_bed_leveling();
+      return;
     #endif
     case 90: // G90
       relative_mode = false;
       break;
     case 91: // G91
-      fprintf(stderr, "relative mode not fully supported yet!\n");
+      errExit("relative mode not fully supported yet!");
       relative_mode = true;
       break;
     case 92: // G92
-      if(!code_seen(axis_codes[E_AXIS]))
-        st_synchronize();
-      for(i=0; i < NUM_AXIS; i++) {
-        if(code_seen(axis_codes[i])) {
-          if(i == E_AXIS) {
-            current_position[i] = code_value();
-            plan_set_e_position(current_position[E_AXIS]);
-           } else {
-             current_position[i] = code_value()+add_homeing[i];
-             plan_set_position(current_position[X_AXIS], current_position[Y_AXIS],
-                 current_position[Z_AXIS], current_position[E_AXIS]);
-           }
-        }
-      }
+      do_set_position();
+     break;
+    default:
+      errExit("Unsupported G command found!");
       break;
     }
-  }
-
-  else if(code_seen('M'))
-  {
-    switch( (int)code_value() )
-    {
+  } else if(code_seen('M')) {
+    switch((int)code_value()) {
     case 82:
       axis_relative_modes[3] = false;
       break;
@@ -847,45 +949,13 @@ void process_commands()
       break;
     case 18: //compatibility
     case 84: // M84
-      if(code_seen('S')){
-        stepper_inactive_time = code_value() * 1000;
-      }
-      else
-      {
-        bool all_axis = !((code_seen(axis_codes[0])) || (code_seen(axis_codes[1])) || (code_seen(axis_codes[2]))|| (code_seen(axis_codes[3])));
-        if(all_axis)
-        {
-          st_synchronize();
-          disable_e0();
-          disable_e1();
-          disable_e2();
-          finishAndDisableSteppers();
-        }
-        else
-        {
-          st_synchronize();
-          if(code_seen('X')) disable_x();
-          if(code_seen('Y')) disable_y();
-          if(code_seen('Z')) disable_z();
-          #if ((E0_ENABLE_PIN != X_ENABLE_PIN) && (E1_ENABLE_PIN != Y_ENABLE_PIN)) // Only enable on boards that have seperate ENABLE_PINS
-            if(code_seen('E')) {
-              disable_e0();
-              disable_e1();
-              disable_e2();
-            }
-          #endif
-        }
-      }
+      stop_idle_hold();
       break;
     case 104: // M104
       if(setTargetedHotend(104)){
         break;
       }
       if (code_seen('S')) setTargetHotend(code_value(), tmp_extruder);
-#ifdef DUAL_X_CARRIAGE
-      if (dual_x_carriage_mode == DXC_DUPLICATION_MODE && tmp_extruder == 0)
-        setTargetHotend1(code_value() == 0.0 ? 0.0 : code_value() + duplicate_extruder_temp_offset);
-#endif          
       setWatch();
       break;
     #if defined(FAN_PIN) && FAN_PIN > -1
@@ -902,72 +972,10 @@ void process_commands()
         break;
     #endif //FAN_PIN
     case 109:
-    {// M109 - Wait for extruder heater to reach target.
-      if(setTargetedHotend(109)){
-        break;
-      }
-      #ifdef AUTOTEMP
-        autotemp_enabled=false;
-      #endif
-      if (code_seen('S')) {
-        setTargetHotend(code_value(), tmp_extruder);
-      } else if (code_seen('R')) {
-        setTargetHotend(code_value(), tmp_extruder);
-      }
-      #ifdef AUTOTEMP
-        if (code_seen('S')) autotemp_min=code_value();
-        if (code_seen('B')) autotemp_max=code_value();
-        if (code_seen('F'))
-        {
-          autotemp_factor=code_value();
-          autotemp_enabled=true;
-        }
-      #endif
-
-      setWatch();
-      codenum = millis();
-
-      /* See if we are heating up or cooling down */
-      target_direction = isHeatingHotend(tmp_extruder); // true if heating, false if cooling
-
-      long residencyStart;
-      residencyStart = -1;
-      /* continue to loop until we have reached the target temp
-        _and_ until TEMP_RESIDENCY_TIME hasn't passed since we reached it */
-      while((residencyStart == -1) || (residencyStart >= 0 &&
-            (((unsigned int) (millis() - residencyStart)) < (TEMP_RESIDENCY_TIME * 1000UL))) ) {
-        if( (millis() - codenum) > 1000UL )
-        { //Print Temp Reading and remaining time every 1 second while heating up/cooling down
-          printf("Temperature of Extruder %d: %f\n", (int)tmp_extruder, degHotend(tmp_extruder));
-          if(residencyStart > -1)
-          {
-             codenum = ((TEMP_RESIDENCY_TIME * 1000UL) - (millis() - residencyStart)) / 1000UL;
-             printf("Remaining time to keep this temperature: %lu\n", codenum);
-          }
-          codenum = millis();
-        }
-        manage_heater();
-        manage_inactivity();
-          /* start/restart the TEMP_RESIDENCY_TIME timer whenever we reach target temp for the first time
-            or when current temp falls outside the hysteresis after target temp was reached */
-        if ((residencyStart == -1 &&  target_direction && (degHotend(tmp_extruder) >= (degTargetHotend(tmp_extruder)-TEMP_WINDOW))) ||
-            (residencyStart == -1 && !target_direction && (degHotend(tmp_extruder) <= (degTargetHotend(tmp_extruder)+TEMP_WINDOW))) ||
-            (residencyStart > -1 && labs(degHotend(tmp_extruder) - degTargetHotend(tmp_extruder)) > TEMP_HYSTERESIS) )
-        {
-          residencyStart = millis();
-        }
-      }
-      starttime=millis();
-      previous_millis_cmd = millis();
-    }
-    break;
-
-    case 117:
-      starpos = (strchr(strchr_pointer + 5,'*'));
-      if(starpos!=NULL)
-        *(starpos-1)='\0';
-      //lcd_setstatus(strchr_pointer + 5);
+      set_temp_and_wait();
       break;
+    case 140:
+      errExit("Bed temperature not supported!");
     }
   }
 }
@@ -988,42 +996,6 @@ void get_coordinates()
     next_feedrate = code_value();
     if(next_feedrate > 0.0) feedrate = next_feedrate;
   }
-  #ifdef FWRETRACT
-  if(autoretract_enabled)
-  if( !(seen[X_AXIS] || seen[Y_AXIS] || seen[Z_AXIS]) && seen[E_AXIS])
-  {
-    float echange=destination[E_AXIS]-current_position[E_AXIS];
-    if(echange<-MIN_RETRACT) //retract
-    {
-      if(!retracted)
-      {
-
-      destination[Z_AXIS]+=retract_zlift; //not sure why chaninging current_position negatively does not work.
-      //if slicer retracted by echange=-1mm and you want to retract 3mm, corrrectede=-2mm additionally
-      float correctede=-echange-retract_length;
-      //to generate the additional steps, not the destination is changed, but inversely the current position
-      current_position[E_AXIS]+=-correctede;
-      feedrate=retract_feedrate;
-      retracted=true;
-      }
-
-    }
-    else
-      if(echange>MIN_RETRACT) //retract_recover
-    {
-      if(retracted)
-      {
-      //current_position[Z_AXIS]+=-retract_zlift;
-      //if slicer retracted_recovered by echange=+1mm and you want to retract_recover 3mm, corrrectede=2mm additionally
-      float correctede=-echange+1*retract_length+retract_recover_length; //total unretract=retract_length+retract_recover_length[surplus]
-      current_position[E_AXIS]+=correctede; //to generate the additional steps, not the destination is changed, but inversely the current position
-      feedrate=retract_recover_feedrate;
-      retracted=false;
-      }
-    }
-
-  }
-  #endif //FWRETRACT
 }
 
 void clamp_to_software_endstops(float target[3])

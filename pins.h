@@ -56,7 +56,6 @@
 #define HEATER_BED_PIN     -1  // Bed
 #define FAN_PIN        			24  // Fan
 
-//TODO
 #define X_STOP_PIN         21
 #define Y_STOP_PIN         23
 #define Z_STOP_PIN         25
