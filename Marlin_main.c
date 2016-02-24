@@ -929,7 +929,6 @@ void process_commands()
       relative_mode = false;
       break;
     case 91: // G91
-      errExit("relative mode not fully supported yet!");
       relative_mode = true;
       break;
     case 92: // G92
