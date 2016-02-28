@@ -285,18 +285,9 @@ void tp_init()
 #endif //PIDTEMP
   }
 
+  //heater disabled after initialization
   SET_OUTPUT(HEATER_0_PIN);
-
-  #if defined(FAN_PIN) && (FAN_PIN > -1)  
-    #ifdef FAST_PWM_FAN
-    SET_OUTPUT(FAN_PIN);
-    setPwmFrequency(FAN_PIN, 1); // No prescaling. Pwm frequency = F_CPU/256/8
-    #endif
-    #ifdef FAN_SOFT_PWM
-    SET_OUTPUT(FAN_PIN);
-    soft_pwm_fan = fanSpeedSoftPwm / 2;
-    #endif
-  #endif  
+  disable_heater();
 
   // --TOM--: we are reading temperature using I2C-ADC instead of analog pin.
   // Legitimately, i2c should be initialized here. But it is actually initialized 
