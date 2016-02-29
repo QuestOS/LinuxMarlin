@@ -42,11 +42,8 @@
 static int timerid;
 
 int target_temperature[EXTRUDERS] = { 0 };
-//int target_temperature_bed = 0;
 int current_temperature_raw[EXTRUDERS] = { 0 };
 float current_temperature[EXTRUDERS] = { 0.0 };
-//int current_temperature_bed_raw = 0;
-//float current_temperature_bed = 0.0;
 #ifdef PIDTEMP
   float Kp=DEFAULT_Kp;
   float Ki=(DEFAULT_Ki*PID_dT);
@@ -56,8 +53,6 @@ float current_temperature[EXTRUDERS] = { 0.0 };
   #endif
 #endif //PIDTEMP
 
-unsigned char soft_pwm_bed;
-  
 //===========================================================================
 //=============================private variables============================
 //===========================================================================
@@ -79,7 +74,6 @@ static volatile bool temp_meas_ready = false;
   static bool pid_reset[EXTRUDERS];
 #endif //PIDTEMP
 
-static unsigned long  previous_millis_bed_heater;
 static unsigned char soft_pwm[EXTRUDERS];
 
 # define ARRAY_BY_EXTRUDERS(v1, v2, v3) { v1 }
@@ -89,13 +83,11 @@ static int minttemp_raw[EXTRUDERS] = ARRAY_BY_EXTRUDERS( HEATER_0_RAW_LO_TEMP , 
 static int maxttemp_raw[EXTRUDERS] = ARRAY_BY_EXTRUDERS( HEATER_0_RAW_HI_TEMP , HEATER_1_RAW_HI_TEMP , HEATER_2_RAW_HI_TEMP );
 static int minttemp[EXTRUDERS] = ARRAY_BY_EXTRUDERS( 0, 0, 0 );
 static int maxttemp[EXTRUDERS] = ARRAY_BY_EXTRUDERS( 16383, 16383, 16383 );
-//static int bed_minttemp_raw = HEATER_BED_RAW_LO_TEMP; /* No bed mintemp error implemented?!? */
 
 static void *heater_ttbl_map[EXTRUDERS] = ARRAY_BY_EXTRUDERS( (void *)HEATER_0_TEMPTABLE, (void *)HEATER_1_TEMPTABLE, (void *)HEATER_2_TEMPTABLE );
 static uint8_t heater_ttbllen_map[EXTRUDERS] = ARRAY_BY_EXTRUDERS( HEATER_0_TEMPTABLE_LEN, HEATER_1_TEMPTABLE_LEN, HEATER_2_TEMPTABLE_LEN );
 
 static float analog2temp(int raw, uint8_t e);
-//static float analog2tempBed(int raw);
 static void updateTemperaturesFromRawValues();
 
 #ifndef SOFT_PWM_SCALE
@@ -115,14 +107,9 @@ void updatePID()
      temp_iState_max[e] = PID_INTEGRAL_DRIVE_MAX / Ki;  
   }
 #endif
-#ifdef PIDTEMPBED
-  temp_iState_max_bed = PID_INTEGRAL_DRIVE_MAX / bedKi;  
-#endif
 }
   
 int getHeaterPower(int heater) {
-	if (heater<0)
-		return soft_pwm_bed;
   return soft_pwm[heater];
 }
 
@@ -202,12 +189,6 @@ void manage_heater()
       soft_pwm[e] = 0;
     }
   } // End extruder for loop
-
-  #ifndef PIDTEMPBED
-  if(millis() - previous_millis_bed_heater < BED_CHECK_INTERVAL)
-    return;
-  previous_millis_bed_heater = millis();
-  #endif
 }
 
 // Derived from RepRap FiveD extruder::getTemperature()
