@@ -467,9 +467,7 @@ bool get_command()
           case 1:
           case 2:
           case 3:
-            if(Stopped == false) { // If printer is stopped by an error the G[0-3] codes are ignored.
-            }
-            else {
+            if(Stopped == true) { // If printer is stopped by an error the G[0-3] codes are ignored.
               printf("MSG_ERR_STOPPED\n");
             }
             break;

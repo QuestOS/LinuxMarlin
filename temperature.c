@@ -180,6 +180,8 @@ void manage_heater()
     }
   #endif
 
+    //DEBUG_PRINT("current_temperature is %d, minttemp is %d, maxttemp is %d\n",
+     //   current_temperature[e], minttemp[e], maxttemp[0]);
     // Check if temperature is within the correct range
     if((current_temperature[e] > minttemp[e]) && (current_temperature[e] < maxttemp[e])) 
     {
@@ -194,23 +196,13 @@ void manage_heater()
 // Derived from RepRap FiveD extruder::getTemperature()
 // For hot end temperature measurement.
 static float analog2temp(int raw, uint8_t e) {
-#ifdef TEMP_SENSOR_1_AS_REDUNDANT
-  if(e > EXTRUDERS)
-#else
   if(e >= EXTRUDERS)
-#endif
   {
       SERIAL_ERROR_START;
       SERIAL_ERROR((int)e);
       SERIAL_ERRORLNPGM(" - Invalid extruder number !");
       ikill();
   } 
-  #ifdef HEATER_0_USES_MAX6675
-    if (e == 0)
-    {
-      return 0.25 * raw;
-    }
-  #endif
 
   if(heater_ttbl_map[e] != NULL)
   {
@@ -338,16 +330,34 @@ void write_heater(int val)
 void disable_heater()
 {
 	int i;
+
+  DEBUG_PRINT("disabling heater...\n");
   for(i=0;i<EXTRUDERS;i++)
     setTargetHotend(0,i);
-  //setTargetBed(0);
-  #if defined(TEMP_0_PIN) && TEMP_0_PIN > -1
-  target_temperature[0]=0;
   soft_pwm[0]=0;
-   #if defined(HEATER_0_PIN) && HEATER_0_PIN > -1  
-     write_heater(0);
-   #endif
-  #endif
+  write_heater(0);
+}
+
+void do_manage_heater()
+{
+  static unsigned char pwm_count = (1 << SOFT_PWM_SCALE);
+  static unsigned char soft_pwm_0;
+  
+  if(pwm_count == 0){
+    soft_pwm_0 = soft_pwm[0];
+    if(soft_pwm_0 > 0) 
+      write_heater(1);
+    else
+      write_heater(0);
+  }
+  if(soft_pwm_0 < pwm_count) {
+    //DEBUG_PRINT("soft_pwm[0] is %d, soft_pwm_0 is %d, pwm_count is %d\n",
+        //soft_pwm[0], soft_pwm_0, pwm_count);
+    write_heater(0);
+  }
+  
+  pwm_count += (1 << SOFT_PWM_SCALE);
+  pwm_count &= 0x7f;
 }
 
 void max_temp_error(uint8_t e) {
@@ -380,22 +390,9 @@ handler(int sig, siginfo_t *si, void *uc)
   static unsigned char temp_count = 0;
   static unsigned long raw_temp_0_value = 0;
   static unsigned char temp_state = 0;
-  static unsigned char pwm_count = (1 << SOFT_PWM_SCALE);
-  static unsigned char soft_pwm_0;
-  
-  if(pwm_count == 0){
-    soft_pwm_0 = soft_pwm[0];
-    if(soft_pwm_0 > 0) 
-      write_heater(1);
-    else
-      write_heater(0);
-  }
-  if(soft_pwm_0 < pwm_count)
-    write_heater(0);
-  
-  pwm_count += (1 << SOFT_PWM_SCALE);
-  pwm_count &= 0x7f;
-  
+
+  do_manage_heater();
+
   //--TOM-- single-ended channel 0
   const uint8_t cmd = 0x80;
   uint8_t res[2];
@@ -405,7 +402,6 @@ handler(int sig, siginfo_t *si, void *uc)
   //--TOM-- modified based on Marlin firmware
   //read temperature from TEMP_0_PIN every 8 interrupts
   if (++temp_state % 8 == 0) {
-    #if defined(TEMP_0_PIN) && (TEMP_0_PIN > -1)
     if (mraa_i2c_write_byte(temp_sensor, cmd) != MRAA_SUCCESS)
       errExit("mraa_i2c_write_byte");
     mraa_i2c_read(temp_sensor, &res[0], 2);
@@ -414,7 +410,6 @@ handler(int sig, siginfo_t *si, void *uc)
     final_res |= res[1];
     DEBUG_PRINT("read word: %u\n", final_res);
     raw_temp_0_value += final_res >> 2;
-    #endif
     temp_state = 0;
     temp_count++;
   }
@@ -434,6 +429,8 @@ handler(int sig, siginfo_t *si, void *uc)
 #else
     if(current_temperature_raw[0] >= maxttemp_raw[0]) {
 #endif
+        DEBUG_PRINT("max_temp_error: current_temperature_raw is %d, maxttemp_raw is %d, mintemp_raw is %d\n",
+            current_temperature_raw[0], maxttemp_raw[0], minttemp_raw[0]);
         max_temp_error(0);
     }
 #if HEATER_0_RAW_LO_TEMP > HEATER_0_RAW_HI_TEMP
@@ -441,6 +438,8 @@ handler(int sig, siginfo_t *si, void *uc)
 #else
     if(current_temperature_raw[0] <= minttemp_raw[0]) {
 #endif
+        DEBUG_PRINT("min_temp_error: current_temperature_raw is %d, maxttemp_raw is %d, mintemp_raw is %d\n",
+            current_temperature_raw[0], maxttemp_raw[0], minttemp_raw[0]);
         min_temp_error(0);
     }
   }
