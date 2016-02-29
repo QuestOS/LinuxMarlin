@@ -328,6 +328,13 @@ void setWatch()
 #endif 
 }
 
+//A hack to invert the logic to conform to the hardware setup
+void write_heater(int val)
+{
+  //DEBUG_PRINT("write_heater: %d\n", val);
+  WRITE(HEATER_0_PIN, !val);
+}
+
 void disable_heater()
 {
 	int i;
@@ -361,15 +368,6 @@ void min_temp_error(uint8_t e) {
   #ifndef BOGUS_TEMPERATURE_FAILSAFE_OVERRIDE
   Stop();
   #endif
-}
-
-//A hack to invert the logic to conform to the hardware setup
-void write_heater(int val)
-{
-  if (val == 0)
-    WRITE(HEATER_0_PIN,1);
-  else 
-    WRITE(HEATER_0_PIN,0);
 }
 
 // Timer 0 is shared with millis
