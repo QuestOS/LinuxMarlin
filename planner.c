@@ -383,6 +383,14 @@ void planner_recalculate() {
   planner_recalculate_trapezoids();
 }
 
+//A hack to invert the logic to conform to the hardware setup
+//when fan_speed is 0, we shut the fan off by writing 1 
+//when fan_speed is 255, we turn the fan on by writing 0
+void write_fan(char fan_speed)
+{
+  WRITE(FAN_PIN, !fan_speed);
+}
+
 void plan_init() {
   block_buffer_head = 0;
   block_buffer_tail = 0;
@@ -392,10 +400,11 @@ void plan_init() {
   previous_speed[2] = 0.0;
   previous_speed[3] = 0.0;
   previous_nominal_speed = 0.0;
+
+  //init and disable fan
+  SET_OUTPUT(FAN_PIN);
+  write_fan(0);
 }
-
-
-
 
 #ifdef AUTOTEMP
 void getHighESpeed()
@@ -472,9 +481,7 @@ void check_axes_activity()
     disable_e1();
     disable_e2(); 
   }
-#if defined(FAN_PIN) && FAN_PIN > -1
-  analogWrite(FAN_PIN,tail_fan_speed);
-#endif//FAN_PIN > -1
+  write_fan(tail_fan_speed);
 #ifdef AUTOTEMP
   getHighESpeed();
 #endif

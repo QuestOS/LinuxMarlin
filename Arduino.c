@@ -15,9 +15,6 @@ static struct timeval start;
 static float clocks_per_ns = 0;
 float cpufreq = 0;
 
-/* PWM for fan */
-mraa_pwm_context pwm_cxt;
-
 static inline uint64_t rdtsc(void)
 {
     uint32_t lo, hi;
@@ -111,24 +108,6 @@ int digitalRead(int pin)
 void digitalWrite(int pin, int val)
 {
   WRITE(pin, val);
-}
-
-void analogWrite(int pin, int val)
-{
-  if (!pwm_cxt) {
-    DEBUG_PRINT("pwm pin: %d\n", pin);
-    pwm_cxt = mraa_pwm_init(pin);
-    if (!pwm_cxt) {
-      errExit("mraa_pwm_init");
-    }
-
-    mraa_pwm_period_us(pwm_cxt, 1);
-    mraa_pwm_enable(pwm_cxt, 1);
-  }
-  
-  //mraa_pwm_write(pwm_cxt, (float)val / (float)255);
-  //A hack to invert the logic to conform to the hardware setup
-  mraa_pwm_write(pwm_cxt, (1 - (float)val / (float)255));
 }
 
 void delay(unsigned long time)
