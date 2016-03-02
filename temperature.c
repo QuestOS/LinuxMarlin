@@ -320,11 +320,10 @@ void setWatch()
 #endif 
 }
 
-//A hack to invert the logic to conform to the hardware setup
 void write_heater(int val)
 {
   //DEBUG_PRINT("write_heater: %d\n", val);
-  WRITE(HEATER_0_PIN, !val);
+  WRITE(HEATER_0_PIN, val);
 }
 
 void disable_heater()

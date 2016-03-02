@@ -383,12 +383,11 @@ void planner_recalculate() {
   planner_recalculate_trapezoids();
 }
 
-//A hack to invert the logic to conform to the hardware setup
-//when fan_speed is 0, we shut the fan off by writing 1 
-//when fan_speed is 255, we turn the fan on by writing 0
+//when fan_speed is 0, we shut the fan off by writing 0
+//when fan_speed is 255, we turn the fan on by writing 1
 void write_fan(char fan_speed)
 {
-  WRITE(FAN_PIN, !fan_speed);
+  WRITE(FAN_PIN, !!fan_speed);
 }
 
 void plan_init() {
