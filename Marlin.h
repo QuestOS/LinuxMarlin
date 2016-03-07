@@ -132,7 +132,9 @@ extern int extrudemultiply;
 extern int fanSpeed;
 extern char active_extruder;
 extern float add_homeing[3];
+#ifdef ENABLE_AUTO_BED_LEVELING
 extern float bed_level_probe_offset[3];
+#endif
 extern float base_min_pos[3];
 extern float base_max_pos[3];
 extern bool axis_known_position[3];
