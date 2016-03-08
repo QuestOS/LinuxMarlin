@@ -404,9 +404,13 @@ handler(int sig, siginfo_t *si, void *uc)
     if (mraa_i2c_write_byte(temp_sensor, cmd) != MRAA_SUCCESS)
       errExit("mraa_i2c_write_byte");
     mraa_i2c_read(temp_sensor, &res[0], 2);
-    final_res = res[0];
+    //final_res = res[0];
+    //final_res = final_res << 8;
+    //final_res |= res[1];
+    //XXX
+    final_res = res[1];
     final_res = final_res << 8;
-    final_res |= res[1];
+    final_res |= res[0];
     DEBUG_PRINT("read word: %u\n", final_res);
     raw_temp_0_value += final_res >> 2;
     temp_state = 0;
@@ -418,6 +422,8 @@ handler(int sig, siginfo_t *si, void *uc)
     if (!temp_meas_ready) {
       current_temperature_raw[0] = raw_temp_0_value;
     }
+    //XXX
+    current_temperature_raw[0] = 3529;
     
     temp_meas_ready = true;
     temp_count = 0;
