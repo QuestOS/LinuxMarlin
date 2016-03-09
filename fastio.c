@@ -10,7 +10,7 @@ static const int minnowmax_pin_mapping[NGPIO+1] = {
 	477, 480, 478, 483, 479, 482,
 	499, 472, 498, 473, 485, 475,
 	484, 474, 338, 504, 339, 505,
-	340, 464, 
+	340, 509, 
 };
 
 static const char minnowmax_pin_assignment[NGPIO+1][10] = {

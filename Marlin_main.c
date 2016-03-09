@@ -707,7 +707,7 @@ void do_auto_bed_leveling()
   SERIAL_PROTOCOLPGM(" y: ");
   SERIAL_PROTOCOL(BACK_PROBE_BED_POSITION);
   SERIAL_PROTOCOLPGM(" z: ");
-  SERIAL_PROTOCOL(current_position[Z_AXIS]);
+  SERIAL_PROTOCOL_F(current_position[Z_AXIS]);
   SERIAL_PROTOCOLPGM("\n");
 
   // prob 2
@@ -724,7 +724,7 @@ void do_auto_bed_leveling()
   SERIAL_PROTOCOLPGM(" y: ");
   SERIAL_PROTOCOL(FRONT_PROBE_BED_POSITION);
   SERIAL_PROTOCOLPGM(" z: ");
-  SERIAL_PROTOCOL(current_position[Z_AXIS]);
+  SERIAL_PROTOCOL_F(current_position[Z_AXIS]);
   SERIAL_PROTOCOLPGM("\n");
 
   // prob 3
@@ -742,7 +742,7 @@ void do_auto_bed_leveling()
   SERIAL_PROTOCOLPGM(" y: ");
   SERIAL_PROTOCOL(FRONT_PROBE_BED_POSITION);
   SERIAL_PROTOCOLPGM(" z: ");
-  SERIAL_PROTOCOL(current_position[Z_AXIS]);
+  SERIAL_PROTOCOL_F(current_position[Z_AXIS]);
   SERIAL_PROTOCOLPGM("\n");
 
   clean_up_after_endstop_move();
@@ -769,7 +769,6 @@ void do_set_position()
 {
   int8_t i;
 
-  do_set_position();
   if(!code_seen(axis_codes[E_AXIS]))
     st_synchronize();
   for(i=0; i < NUM_AXIS; i++) {
