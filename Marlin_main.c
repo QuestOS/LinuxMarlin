@@ -428,8 +428,7 @@ void Stop()
   if(Stopped == false) {
     Stopped = true;
     Stopped_gcode_LastN = gcode_LastN; // Save last g_code for restart
-    SERIAL_ERROR_START;
-    SERIAL_ERRORLNPGM(MSG_ERR_STOPPED);
+    ECHO_STRING(MSG_ERR_STOPPED);
     //LCD_MESSAGEPGM(MSG_STOPPED);
   }
 }
@@ -703,13 +702,13 @@ void do_auto_bed_leveling()
   float z_at_xLeft_yBack = current_position[Z_AXIS];
   //retract_z_probe();
 
-  SERIAL_PROTOCOLPGM("Bed x: ");
-  SERIAL_PROTOCOL(LEFT_PROBE_BED_POSITION);
-  SERIAL_PROTOCOLPGM(" y: ");
-  SERIAL_PROTOCOL(BACK_PROBE_BED_POSITION);
-  SERIAL_PROTOCOLPGM(" z: ");
-  SERIAL_PROTOCOL_F(current_position[Z_AXIS]);
-  SERIAL_PROTOCOLPGM("\n");
+  ECHO_STRING("Bed x: ");
+  ECHO_FLOAT(LEFT_PROBE_BED_POSITION);
+  ECHO_STRING(" y: ");
+  ECHO_FLOAT(BACK_PROBE_BED_POSITION);
+  ECHO_STRING(" z: ");
+  ECHO_FLOAT(current_position[Z_AXIS]);
+  ECHO_STRING("\n");
 
   // prob 2
   do_blocking_move_to(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS] + Z_RAISE_BETWEEN_PROBINGS);
@@ -720,13 +719,13 @@ void do_auto_bed_leveling()
   float z_at_xLeft_yFront = current_position[Z_AXIS];
   //retract_z_probe();
   
-  SERIAL_PROTOCOLPGM("Bed x: ");
-  SERIAL_PROTOCOL(LEFT_PROBE_BED_POSITION);
-  SERIAL_PROTOCOLPGM(" y: ");
-  SERIAL_PROTOCOL(FRONT_PROBE_BED_POSITION);
-  SERIAL_PROTOCOLPGM(" z: ");
-  SERIAL_PROTOCOL_F(current_position[Z_AXIS]);
-  SERIAL_PROTOCOLPGM("\n");
+  ECHO_STRING("Bed x: ");
+  ECHO_FLOAT(LEFT_PROBE_BED_POSITION);
+  ECHO_STRING(" y: ");
+  ECHO_FLOAT(FRONT_PROBE_BED_POSITION);
+  ECHO_STRING(" z: ");
+  ECHO_FLOAT(current_position[Z_AXIS]);
+  ECHO_STRING("\n");
 
   // prob 3
   do_blocking_move_to(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS] + Z_RAISE_BETWEEN_PROBINGS);
@@ -738,13 +737,13 @@ void do_auto_bed_leveling()
   float z_at_xRight_yFront = current_position[Z_AXIS];
   //retract_z_probe(); // Retract Z Servo endstop if available
   
-  SERIAL_PROTOCOLPGM("Bed x: ");
-  SERIAL_PROTOCOL(RIGHT_PROBE_BED_POSITION);
-  SERIAL_PROTOCOLPGM(" y: ");
-  SERIAL_PROTOCOL(FRONT_PROBE_BED_POSITION);
-  SERIAL_PROTOCOLPGM(" z: ");
-  SERIAL_PROTOCOL_F(current_position[Z_AXIS]);
-  SERIAL_PROTOCOLPGM("\n");
+  ECHO_STRING("Bed x: ");
+  ECHO_FLOAT(RIGHT_PROBE_BED_POSITION);
+  ECHO_STRING(" y: ");
+  ECHO_FLOAT(FRONT_PROBE_BED_POSITION);
+  ECHO_STRING(" z: ");
+  ECHO_FLOAT(current_position[Z_AXIS]);
+  ECHO_STRING("\n");
 
   clean_up_after_endstop_move();
 
@@ -1035,22 +1034,21 @@ bool setTargetedHotend(int code){
   if(code_seen('T')) {
     tmp_extruder = code_value();
     if(tmp_extruder >= EXTRUDERS) {
-      SERIAL_ECHO_START;
       switch(code){
         case 104:
-          SERIAL_ECHO(MSG_M104_INVALID_EXTRUDER);
+          ECHO_STRING(MSG_M104_INVALID_EXTRUDER);
           break;
         case 105:
-          SERIAL_ECHO(MSG_M105_INVALID_EXTRUDER);
+          ECHO_STRING(MSG_M105_INVALID_EXTRUDER);
           break;
         case 109:
-          SERIAL_ECHO(MSG_M109_INVALID_EXTRUDER);
+          ECHO_STRING(MSG_M109_INVALID_EXTRUDER);
           break;
         case 218:
-          SERIAL_ECHO(MSG_M218_INVALID_EXTRUDER);
+          ECHO_STRING(MSG_M218_INVALID_EXTRUDER);
           break;
       }
-      SERIAL_ECHOLN(tmp_extruder);
+      ECHO_DECIMAL(tmp_extruder);
       return true;
     }
   }

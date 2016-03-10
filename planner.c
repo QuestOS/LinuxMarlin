@@ -523,16 +523,14 @@ void plan_buffer_line(float x, float y, float z, const float e, float feed_rate,
     if(degHotend(active_extruder)<extrude_min_temp)
     {
       position[E_AXIS]=target[E_AXIS]; //behave as if the move really took place, but ignore E part
-      SERIAL_ECHO_START;
-      SERIAL_ECHOLNPGM(MSG_ERR_COLD_EXTRUDE_STOP);
+      ECHO_STRING(MSG_ERR_COLD_EXTRUDE_STOP);
     }
     
     #ifdef PREVENT_LENGTHY_EXTRUDE
     if(labs(target[E_AXIS]-position[E_AXIS])>axis_steps_per_unit[E_AXIS]*EXTRUDE_MAXLENGTH)
     {
       position[E_AXIS]=target[E_AXIS]; //behave as if the move really took place, but ignore E part
-      SERIAL_ECHO_START;
-      SERIAL_ECHOLNPGM(MSG_ERR_LONG_EXTRUDE_STOP);
+      ECHO_STRING(MSG_ERR_LONG_EXTRUDE_STOP);
     }
     #endif
   }

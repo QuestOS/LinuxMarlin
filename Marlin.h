@@ -28,15 +28,11 @@
 /* only support this frequency value for now */
 #define F_CPU 16000000
 
-#define SERIAL_PROTOCOL(x) printf("%s\n", x)
-#define SERIAL_PROTOCOL_F(x) printf("%f\n", x)
-#define SERIAL_PROTOCOLPGM(x) printf("%s\n", x)
-#define SERIAL_PROTOCOLLN(x) printf("%x\n", x)
-#define SERIAL_PROTOCOLLNPGM(x) printf("%s\n", x)
-#define SERIAL_ERROR_START 
-#define SERIAL_ERROR(x) printf("%s\n", x)
-#define SERIAL_ERRORLN(x) printf("%x\n", x)
-#define SERIAL_ERRORLNPGM(x) printf("%s\n", x)
+#define ECHO_FLOAT(x) printf("%lf", x)
+#define ECHO_STRING(x) printf("%s", x)
+#define ECHO_DECIMAL(x) printf("%lu", x)
+#define ECHOPAIR_L(name,value) printf("%s: %lu", name, value)
+#define ECHOPAIR_F(name,value) printf("%s: %lf", name, value)
 
 #define errExit(msg) 	do { perror(msg); exit(EXIT_FAILURE); \
 										 	} while (0)
@@ -46,14 +42,6 @@
 #else
 #define DEBUG_PRINT(...) do{ } while ( false )
 #endif
-
-#define SERIAL_ECHO_START 
-#define SERIAL_ECHO(x) SERIAL_PROTOCOL(x)
-#define SERIAL_ECHOPGM(x) SERIAL_PROTOCOLPGM(x)
-#define SERIAL_ECHOLN(x) SERIAL_PROTOCOLLN(x)
-#define SERIAL_ECHOLNPGM(x) SERIAL_PROTOCOLLNPGM(x)
-
-#define SERIAL_ECHOPAIR(name,value) SERIAL_PROTOCOL(name)
 
 enum AxisEnum {X_AXIS=0, Y_AXIS=1, Z_AXIS=2, E_AXIS=3};
 

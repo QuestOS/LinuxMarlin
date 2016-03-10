@@ -173,18 +173,17 @@ intRes = (uint16_t)(((uint64_t)longIn1 * (uint64_t)longIn2) >> 24)
 void checkHitEndstops()
 {
  if( endstop_x_hit || endstop_y_hit || endstop_z_hit) {
-   SERIAL_ECHO_START;
-   SERIAL_ECHOPGM(MSG_ENDSTOPS_HIT);
+   ECHO_STRING(MSG_ENDSTOPS_HIT);
    if(endstop_x_hit) {
-     SERIAL_ECHOPAIR(" X:",(float)endstops_trigsteps[X_AXIS]/axis_steps_per_unit[X_AXIS]);
+     ECHOPAIR_F(" X:",(float)endstops_trigsteps[X_AXIS]/axis_steps_per_unit[X_AXIS]);
    }
    if(endstop_y_hit) {
-     SERIAL_ECHOPAIR(" Y:",(float)endstops_trigsteps[Y_AXIS]/axis_steps_per_unit[Y_AXIS]);
+     ECHOPAIR_F(" Y:",(float)endstops_trigsteps[Y_AXIS]/axis_steps_per_unit[Y_AXIS]);
    }
    if(endstop_z_hit) {
-     SERIAL_ECHOPAIR(" Z:",(float)endstops_trigsteps[Z_AXIS]/axis_steps_per_unit[Z_AXIS]);
+     ECHOPAIR_F(" Z:",(float)endstops_trigsteps[Z_AXIS]/axis_steps_per_unit[Z_AXIS]);
    }
-   SERIAL_ECHOLN("");
+   ECHO_STRING("");
    endstop_x_hit=false;
    endstop_y_hit=false;
    endstop_z_hit=false;
@@ -270,7 +269,7 @@ FORCE_INLINE unsigned short calc_timer(unsigned short step_rate) {
     timer = (unsigned short)speed_lookuptable_slow[(unsigned char)(step_rate>>3)][0];
     timer -= (((unsigned short)speed_lookuptable_slow[(unsigned char)(step_rate>>3)][1] * (unsigned char)(step_rate & 0x0007))>>3);
   }
-  if(timer < 100) { timer = 100; SERIAL_PROTOCOL(MSG_STEPPER_TOO_HIGH); SERIAL_PROTOCOLLN(step_rate); }//(20kHz this should never happen)
+  if(timer < 100) { timer = 100; ECHO_STRING(MSG_STEPPER_TOO_HIGH); ECHO_DECIMAL(step_rate); }//(20kHz this should never happen)
   return timer;
 }
 
@@ -286,17 +285,6 @@ FORCE_INLINE void trapezoid_generator_reset() {
   acceleration_time = calc_timer(acc_step_rate);
   //OCR1A = acceleration_time;
   set_time(timerid, 0, 500 * acceleration_time);
-
-//    SERIAL_ECHO_START;
-//    SERIAL_ECHOPGM("advance :");
-//    SERIAL_ECHO(current_block->advance/256.0);
-//    SERIAL_ECHOPGM("advance rate :");
-//    SERIAL_ECHO(current_block->advance_rate/256.0);
-//    SERIAL_ECHOPGM("initial advance :");
-//  SERIAL_ECHO(current_block->initial_advance/256.0);
-//    SERIAL_ECHOPGM("final advance :");
-//    SERIAL_ECHOLN(current_block->final_advance/256.0);
-
 }
 
 // "The Stepper Driver Interrupt" - This timer interrupt is the workhorse.
