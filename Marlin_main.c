@@ -910,7 +910,7 @@ void process_commands()
       do_set_position();
      break;
     default:
-      errExit("Unsupported G command found!");
+      fprintf(stderr, "Unsupported G command found!");
       break;
     }
   } else if(code_seen('M')) {
