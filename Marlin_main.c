@@ -482,6 +482,7 @@ bool get_command()
       else
       {
         if(serial_char == ';') comment_mode = true;
+        else comment_mode = false;
         if(!comment_mode) cmdbuffer[serial_count++] = serial_char;
       }
       serial_count = 0; //clear buffer
