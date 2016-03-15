@@ -121,9 +121,6 @@ static int bufindr = 0;
 static int bufindw = 0;
 static int buflen = 0;
 //static int i = 0;
-static char serial_char;
-static int serial_count = 0;
-static bool comment_mode = false;
 static char *strchr_pointer; // just a pointer to find chars in the cmd string like X, Y, Z, E, etc
 
 //const int sensitive_pins[] = SENSITIVE_PINS; // Sensitive pin list for M42
@@ -157,7 +154,6 @@ bool Stopped = false;
 
 char *file_buf = NULL;
 int file_size;
-int current_read = 0;
 
 //===========================================================================
 //=============================ROUTINES=============================
@@ -433,34 +429,42 @@ void Stop()
   }
 }
 
+//get-command() processes one line at a time
+//if it is a command, return true with the command copied into cmdbuffer
+//if it is an empty or comment line, return false
 bool get_command()
 {
-  while (current_read < file_size) {
-    serial_char = file_buf[current_read++];
-    if(serial_char == '\n' ||
-       serial_char == '\r' ||
-       (serial_char == ':' && comment_mode == false) ||
-       serial_count >= (MAX_CMD_SIZE - 1) )
-    {
-      if(!serial_count) { //if empty line
-        comment_mode = false; //for new command
+  static int file_pos = 0;
+  char cur_char;
+  bool comment_mode = false;
+  int read_count = 0;
+
+  while (file_pos < file_size) {
+    cur_char = file_buf[file_pos++];
+
+    //if cur_char is ';', turn comment_mode on.
+    //if cur_char is '\n', end of line. turn comment_mode off. Check read_count,
+    ////if 0, this is an empty or comment line. 
+    ////if not 0, there must be something in the cmdbuffer, return.
+    //if not ';' or '\n', check comment_mode.
+    ////if on, do nothing.
+    ////if off, copy current char into cmdbuffer and increment read_count
+
+    if (cur_char == ';') {
+      comment_mode = true;
+    }
+    else if (cur_char == '\n') {
+      if (read_count == 0) {
+        //this is an empty or comment line 
         return false;
-      }
-      cmdbuffer[serial_count] = 0;  //terminate string
-      if(!comment_mode){
-        comment_mode = false; //for new command
-
-        if(strchr(cmdbuffer, 'N') != NULL)
-        {
-          printf("line number support needed\n");
-          exit(1);
+      } else {
+        cmdbuffer[read_count] = '\0';
+        if(strchr(cmdbuffer, 'N') != NULL) {
+          errExit("line number support needed\n");
         }
-        if((strchr(cmdbuffer, '*') != NULL))
-        {
-          printf("checksum support needed\n");
-          exit(1);
+        if((strchr(cmdbuffer, '*') != NULL)) {
+          errExit("checksum support needed\n");
         }
-
         if((strchr(cmdbuffer, 'G') != NULL)){
           strchr_pointer = strchr(cmdbuffer, 'G');
           switch((int)((strtod(&cmdbuffer[strchr_pointer - cmdbuffer + 1], NULL)))){
@@ -469,31 +473,22 @@ bool get_command()
           case 2:
           case 3:
             if(Stopped == true) { // If printer is stopped by an error the G[0-3] codes are ignored.
-              printf("MSG_ERR_STOPPED\n");
+              fprintf(stderr, "G[0-3] codes will be ignored because printer is stopped\n");
             }
             break;
           default:
             break;
           }
         }
-        serial_count = 0; //clear buffer
+        return true;
       }
-      else
-      {
-        if(serial_char == ';') comment_mode = true;
-        else comment_mode = false;
-        if(!comment_mode) cmdbuffer[serial_count++] = serial_char;
-      }
-      serial_count = 0; //clear buffer
-      return true;
     }
-    else
-    {
-      if(serial_char == ';') comment_mode = true;
-      if(!comment_mode) cmdbuffer[serial_count++] = serial_char;
+    else {
+      if (!comment_mode) {
+        cmdbuffer[read_count++] = cur_char; 
+      }
     }
   }
-
   return false;
 }
 
