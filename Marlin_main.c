@@ -946,6 +946,19 @@ void process_commands()
     case 109:
       set_temp_and_wait();
       break;
+    #ifdef ENABLE_AUTO_BED_LEVELING
+    case 212: //M212 - Set probe offset for bed leveling
+    {
+      for(i=0; i < 3; i++)
+      {
+        if(code_seen(axis_codes[i]))
+        {
+          bed_level_probe_offset[i] = code_value();
+        }
+      }
+    }
+    break;
+    #endif
     default:
       fprintf(stderr, "Unsupported M command found!");
       break;
