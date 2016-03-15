@@ -946,8 +946,9 @@ void process_commands()
     case 109:
       set_temp_and_wait();
       break;
-    case 140:
-      errExit("Bed temperature not supported!");
+    default:
+      fprintf(stderr, "Unsupported M command found!");
+      break;
     }
   }
 }
