@@ -437,6 +437,8 @@ handler(int sig, siginfo_t *si, void *uc)
             current_temperature_raw[0], maxttemp_raw[0], minttemp_raw[0]);
         max_temp_error(0);
     }
+//--TOM--: disable min_temp checking
+#if 0
 #if HEATER_0_RAW_LO_TEMP > HEATER_0_RAW_HI_TEMP
     if(current_temperature_raw[0] >= minttemp_raw[0]) {
 #else
@@ -446,6 +448,7 @@ handler(int sig, siginfo_t *si, void *uc)
             current_temperature_raw[0], maxttemp_raw[0], minttemp_raw[0]);
         min_temp_error(0);
     }
+#endif
   }
 }
 

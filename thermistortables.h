@@ -878,8 +878,7 @@ const short temptable_60[][2]  = {
 # ifdef HEATER_0_USES_THERMISTOR   //In case of a thermistor the highest temperature results in the lowest ADC value
 //--TOM--: Printrboard Rev F5
 #  define HEATER_0_RAW_HI_TEMP 0
-//#  define HEATER_0_RAW_LO_TEMP 16383
-#  define HEATER_0_RAW_LO_TEMP (16383 + 150)
+#  define HEATER_0_RAW_LO_TEMP 16383
 # else                          //In case of an thermocouple the highest temperature results in the highest ADC value
 #  define HEATER_0_RAW_HI_TEMP 16383
 #  define HEATER_0_RAW_LO_TEMP 0
