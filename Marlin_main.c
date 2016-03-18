@@ -905,7 +905,7 @@ void process_commands()
       do_set_position();
      break;
     default:
-      fprintf(stderr, "Unsupported G command found!");
+      fprintf(stderr, "Unsupported G command found!\n");
       break;
     }
   } else if(code_seen('M')) {
@@ -955,7 +955,7 @@ void process_commands()
     break;
     #endif
     default:
-      fprintf(stderr, "Unsupported M command found!");
+      fprintf(stderr, "Unsupported M command found!\n");
       break;
     }
   }
@@ -1000,10 +1000,11 @@ void prepare_move()
 
   previous_millis_cmd = millis();
 
-  DEBUG_PRINT("destination: (%lf, %lf, %lf)\n",
-      destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS]);
-  DEBUG_PRINT("current: (%lf, %lf, %lf)\n",
-      current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS]);
+  DEBUG_PRINT("MAIN current: (%lf, %lf, %lf, %lf)\n",
+      current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS],
+      current_position[E_AXIS]);
+  DEBUG_PRINT("MAIN target: (%lf, %lf, %lf, %lf)\n",
+      destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS]);
   // Do not use feedmultiply for E or Z only moves
   if( (current_position[X_AXIS] == destination [X_AXIS]) && (current_position[Y_AXIS] == destination [Y_AXIS])) {
       plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate/60, active_extruder);

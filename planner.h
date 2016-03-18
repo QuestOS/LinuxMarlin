@@ -110,15 +110,12 @@ static FORCE_INLINE void plan_discard_current_block()
 // Gets the current block. Returns NULL if buffer empty
 static FORCE_INLINE block_t *plan_get_current_block() 
 {
-  /*
-  DEBUG_PRINT("Getting new block, block buffer head: %u, tail: %u\n",
-      block_buffer_head, block_buffer_tail);
-  */
   if (block_buffer_head == block_buffer_tail) { 
     return(NULL); 
   }
   block_t *block = &block_buffer[block_buffer_tail];
   block->busy = true;
+  DEBUG_PRINT("STEPPER fetching block %u\n", block_buffer_tail);
   return(block);
 }
 

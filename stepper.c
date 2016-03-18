@@ -297,6 +297,9 @@ static void handler(void)
     // Anything in the buffer?
     current_block = plan_get_current_block();
     if (current_block != NULL) {
+      DEBUG_PRINT("STEPPER steps to execute on each axis: (%ld, %ld, %ld, %ld)\n",
+          current_block->steps_x, current_block->steps_y, current_block->steps_z,
+          current_block->steps_e);
       current_block->busy = true;
       trapezoid_generator_reset();
       counter_x = -(current_block->step_event_count >> 1);
