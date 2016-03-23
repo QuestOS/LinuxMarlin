@@ -183,7 +183,10 @@ void manage_heater()
     //DEBUG_PRINT("current_temperature is %d, minttemp is %d, maxttemp is %d\n",
      //   current_temperature[e], minttemp[e], maxttemp[0]);
     // Check if temperature is within the correct range
-    if((current_temperature[e] > minttemp[e]) && (current_temperature[e] < maxttemp[e])) 
+
+    /* --RW-- Commented out the following min temp check. */
+    //    if((current_temperature[e] > minttemp[e]) && (current_temperature[e] < maxttemp[e])) 
+    if(current_temperature[e] < maxttemp[e])
     {
       soft_pwm[e] = (int)pid_output >> 1;
     }
