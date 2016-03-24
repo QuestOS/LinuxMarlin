@@ -52,10 +52,11 @@ static inline void _enable_timer(struct timer_info * tinfo)
 		return;
 	} else {
 		tinfo->enable = 1;
-		if (!n_enabled_timer++) {
-			//used to be zero enabled timer in the process
-			//so the global alarm signal must disabled
-			//now we need to enable it
+		if (!n_enabled_timer) {
+			//no timer was active before this one
+			//so the global alarm signal must be masked off
+			//now enable it
+			n_enabled_timer++;
 			sigprocmask(SIG_UNBLOCK, &mask, NULL);
 		}
 	}
@@ -72,7 +73,8 @@ static inline void _disable_timer(struct timer_info * tinfo)
 		return;
 	} else {
 		tinfo->enable = 0;
-		if (--n_enabled_timer) {
+		n_enabled_timer--;
+		if (!n_enabled_timer) {
 			//no enabled timer in the process, disable the global alarm signal
 			sigprocmask(SIG_BLOCK, &mask, NULL);
 		}
