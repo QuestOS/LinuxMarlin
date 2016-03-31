@@ -50,8 +50,16 @@ pthread_t stp_thread;
 //static makes it inpossible to be called from outside of this file by extern.!
 
 //static int timerid;
-#define ENABLE_STEPPER_DRIVER_INTERRUPT()   enable_timer(timerid)
-#define DISABLE_STEPPER_DRIVER_INTERRUPT()  disable_timer(timerid)
+//#define ENABLE_STEPPER_DRIVER_INTERRUPT()   enable_timer(timerid)
+//#define DISABLE_STEPPER_DRIVER_INTERRUPT()  disable_timer(timerid)
+static pthread_mutex_t stp_mtx;
+#define ENABLE_STEPPER_DRIVER_INTERRUPT         \
+  do {                                          \
+    pthread_mutex_trylock(&stp_mtx);            \
+    pthread_mutex_unlock(&stp_mtx);             \
+  } while (0)
+
+#define DISABLE_STEPPER_DRIVER_INTERRUPT pthread_mutex_lock(&stp_mtx)
 
 // Variables used by The Stepper Driver Interrupt
 static unsigned char out_bits;        // The next stepping-bits to be output
@@ -538,6 +546,10 @@ static void * handler(void * arg)
         plan_discard_current_block();
       }
     }
+
+    //block if steppers are disabled
+    pthread_mutex_lock(&stp_mtx);
+    pthread_mutex_unlock(&stp_mtx);
   }
 }
 
@@ -643,6 +655,10 @@ void st_init()
   OCR1A = 0x4000;
   TCNT1 = 0;
 */
+
+  //init the mutex
+  pthread_mutex_init(&stp_mtx, NULL);
+  pthread_mutex_lock(&stp_mtx);
 
   //timerid = create_timer(handler);
   if (pthread_create(&stp_thread, NULL, &handler, NULL)) {
