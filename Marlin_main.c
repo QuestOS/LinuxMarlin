@@ -234,8 +234,10 @@ int main(int argc, char *argv[]) {
   int file = setup(argv[1]);
 
   while (1) loop(file);
-  extern pthread_t temp_thread;
+  extern pthread_t temp_thread, stp_thread;
   if (pthread_join(temp_thread, NULL))
+    errExit("pthread_join");
+  if (pthread_join(stp_thread, NULL))
     errExit("pthread_join");
 
   return 0;
