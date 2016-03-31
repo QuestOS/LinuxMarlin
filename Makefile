@@ -11,7 +11,7 @@ DEPS = Marlin.h
 	timer.o
 all: Marlin_main.o Arduino.o planner.o stepper.o vector_3.o fastio.o ConfigurationStore.o temperature.o
 	$(CC) -o marlin Marlin_main.o Arduino.o planner.o stepper.o vector_3.o fastio.o \
-		ConfigurationStore.o temperature.o timer.o $(CFLAGS)
+		ConfigurationStore.o temperature.o $(CFLAGS)
 
 clean:
 	rm -f *.o marlin

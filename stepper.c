@@ -53,13 +53,13 @@ pthread_t stp_thread;
 //#define ENABLE_STEPPER_DRIVER_INTERRUPT()   enable_timer(timerid)
 //#define DISABLE_STEPPER_DRIVER_INTERRUPT()  disable_timer(timerid)
 static pthread_mutex_t stp_mtx;
-#define ENABLE_STEPPER_DRIVER_INTERRUPT         \
+#define ENABLE_STEPPER_DRIVER_INTERRUPT()         \
   do {                                          \
     pthread_mutex_trylock(&stp_mtx);            \
     pthread_mutex_unlock(&stp_mtx);             \
   } while (0)
 
-#define DISABLE_STEPPER_DRIVER_INTERRUPT pthread_mutex_lock(&stp_mtx)
+#define DISABLE_STEPPER_DRIVER_INTERRUPT() pthread_mutex_lock(&stp_mtx)
 
 // Variables used by The Stepper Driver Interrupt
 static unsigned char out_bits;        // The next stepping-bits to be output
@@ -287,6 +287,7 @@ FORCE_INLINE unsigned short calc_timer(unsigned short step_rate) {
 // Initializes the trapezoid generator from the current block. Called whenever a new
 // block begins.
 FORCE_INLINE void trapezoid_generator_reset() {
+  struct timespec t;
   deceleration_time = 0;
   // step_rate to timer interval
   OCR1A_nominal = calc_timer(current_block->nominal_rate);
@@ -295,7 +296,10 @@ FORCE_INLINE void trapezoid_generator_reset() {
   acc_step_rate = current_block->initial_rate;
   acceleration_time = calc_timer(acc_step_rate);
   //OCR1A = acceleration_time;
-  set_time(timerid, 0, 500 * acceleration_time);
+  //set_time(timerid, 0, 500 * acceleration_time);
+  t.tv_sec= 0;
+  t.tv_nsec = 500 * acceleration_time;
+  nanosleep(&t, NULL);
 }
 
 // "The Stepper Driver Interrupt" - This timer interrupt is the workhorse.

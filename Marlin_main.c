@@ -284,7 +284,7 @@ int setup(char *path)
   minnowmax_gpio_init();
   minnowmax_i2c_init();
 
-  timer_init();
+  //timer_init();
 
   tp_init();    // Initialize temperature loop
   DEBUG_PRINT("initializing planner\n");
