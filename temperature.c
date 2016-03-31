@@ -31,6 +31,7 @@
 #include <signal.h>
 #include <time.h>
 #include <inttypes.h>
+#include <pthread.h>
 #include "Marlin.h"
 #include "temperature.h"
 #include "thermistortables.h"
@@ -39,7 +40,7 @@
 //===========================================================================
 //=============================public variables============================
 //===========================================================================
-static int timerid;
+pthread_t temp_thread;
 
 int target_temperature[EXTRUDERS] = { 0 };
 int current_temperature_raw[EXTRUDERS] = { 0 };
@@ -56,6 +57,7 @@ float current_temperature[EXTRUDERS] = { 0.0 };
 //===========================================================================
 //=============================private variables============================
 //===========================================================================
+//static int timerid;
 static volatile bool temp_meas_ready = false;
 
 #ifdef PIDTEMP
@@ -97,7 +99,8 @@ static void updateTemperaturesFromRawValues();
 //===========================================================================
 //=============================   functions      ============================
 //===========================================================================
-static void handler(int sig, siginfo_t *si, void *uc);
+//static void handler(int sig, siginfo_t *si, void *uc);
+static void * handler(void * arg);
     
 void updatePID()
 {
@@ -268,20 +271,15 @@ void tp_init()
   // Legitimately, i2c should be initialized here. But it is actually initialized 
   // in setup() because we want to cluster all board specific initializations
   
-  // Use timer0 for temperature measurement
-  // Interleave temperature interrupt with millis interrupt
-  /*OCR0B = 128;
-  TIMSK0 |= (1<<OCIE0B);  */
-
-  //Timer0 is already set up to generate a millisecond (1KHz) interrupt to 
-  //update the millisecond counter reported by millis() in Arduino
   /* establish handler for timer signal */
-  timerid = create_timer(handler);
+  //timerid = create_timer(handler);
 
   /* start the periodic timer */
-  /* normal mode, so no matter what's in OCR0B, frequency remains 1KHz */
-  set_time(timerid, 1, 1000000);
-  enable_timer(timerid);
+  //set_time(timerid, 1, 1000000);
+  //enable_timer(timerid);
+  if (pthread_create(&temp_thread, NULL, &handler, NULL)) {
+    errExit("pthread_create");
+  }
 
   // Wait for temperature measurement to settle
   delay(250);
@@ -383,75 +381,80 @@ void min_temp_error(uint8_t e) {
 
 // Timer 0 is shared with millis
 //ISR(TIMER0_COMPB_vect)
-static void
-handler(int sig, siginfo_t *si, void *uc)
+//static void
+//handler(int sig, siginfo_t *si, void *uc)
+static void * handler(void * arg)
 {
-  //DEBUG_PRINT("temperature handler\n");
   //these variables are only accesible from the ISR, but static, so they don't lose their value
-  static unsigned char temp_count = 0;
-  static unsigned long raw_temp_0_value = 0;
-  static unsigned char temp_state = 0;
-
-  do_manage_heater();
-
+  unsigned char temp_count = 0;
+  unsigned long raw_temp_0_value = 0;
+  unsigned char temp_state = 0;
   //--TOM-- single-ended channel 0
   const uint8_t cmd = 0x80;
   uint8_t res[2];
   uint16_t final_res;
   extern mraa_i2c_context temp_sensor;
+  //nanosleep args
+  const struct timespec t = {.tv_sec = 0, .tv_nsec = 1000000};
 
-  //--TOM-- modified based on Marlin firmware
-  //read temperature from TEMP_0_PIN every 8 interrupts
-  if (++temp_state % 8 == 0) {
-    if (mraa_i2c_write_byte(temp_sensor, cmd) != MRAA_SUCCESS)
-      errExit("mraa_i2c_write_byte");
-    mraa_i2c_read(temp_sensor, &res[0], 2);
-    final_res = res[0];
-    final_res = final_res << 8;
-    final_res |= res[1];
-    //XXX
-    //final_res = res[1];
-    //final_res = final_res << 8;
-    //final_res |= res[0];
-    //DEBUG_PRINT("read word: %u\n", final_res);
-    raw_temp_0_value += final_res >> 2;
-    temp_state = 0;
-    temp_count++;
-  }
-  
-  if(temp_count >= 16) { // 8 ms * 16 = 128ms.
-    //Only update the raw values if they have been read. Else we could be updating them during reading.
-    if (!temp_meas_ready) {
-      current_temperature_raw[0] = raw_temp_0_value;
+  while (1) {
+    //DEBUG_PRINT("temperature handler\n");
+    do_manage_heater();
+
+    //--TOM-- modified based on Marlin firmware
+    //read temperature from TEMP_0_PIN every 8 interrupts
+    if (++temp_state % 8 == 0) {
+      if (mraa_i2c_write_byte(temp_sensor, cmd) != MRAA_SUCCESS)
+        errExit("mraa_i2c_write_byte");
+      mraa_i2c_read(temp_sensor, &res[0], 2);
+      final_res = res[0];
+      final_res = final_res << 8;
+      final_res |= res[1];
+      //XXX
+      //final_res = res[1];
+      //final_res = final_res << 8;
+      //final_res |= res[0];
+      //DEBUG_PRINT("read word: %u\n", final_res);
+      raw_temp_0_value += final_res >> 2;
+      temp_state = 0;
+      temp_count++;
     }
-    //XXX
-    //current_temperature_raw[0] = 3529;
     
-    temp_meas_ready = true;
-    temp_count = 0;
-    raw_temp_0_value = 0;
+    if(temp_count >= 16) { // 8 ms * 16 = 128ms.
+      //Only update the raw values if they have been read. Else we could be updating them during reading.
+      if (!temp_meas_ready) {
+        current_temperature_raw[0] = raw_temp_0_value;
+      }
+      //XXX
+      //current_temperature_raw[0] = 3529;
+      
+      temp_meas_ready = true;
+      temp_count = 0;
+      raw_temp_0_value = 0;
 
-#if HEATER_0_RAW_LO_TEMP > HEATER_0_RAW_HI_TEMP
-    if(current_temperature_raw[0] <= maxttemp_raw[0]) {
-#else
-    if(current_temperature_raw[0] >= maxttemp_raw[0]) {
-#endif
-        DEBUG_PRINT("max_temp_error: current_temperature_raw is %d, maxttemp_raw is %d, mintemp_raw is %d\n",
-            current_temperature_raw[0], maxttemp_raw[0], minttemp_raw[0]);
-        max_temp_error(0);
+  #if HEATER_0_RAW_LO_TEMP > HEATER_0_RAW_HI_TEMP
+      if(current_temperature_raw[0] <= maxttemp_raw[0]) {
+  #else
+      if(current_temperature_raw[0] >= maxttemp_raw[0]) {
+  #endif
+          DEBUG_PRINT("max_temp_error: current_temperature_raw is %d, maxttemp_raw is %d, mintemp_raw is %d\n",
+              current_temperature_raw[0], maxttemp_raw[0], minttemp_raw[0]);
+          max_temp_error(0);
+      }
+  //--TOM--: disable min_temp checking
+  #if 0
+  #if HEATER_0_RAW_LO_TEMP > HEATER_0_RAW_HI_TEMP
+      if(current_temperature_raw[0] >= minttemp_raw[0]) {
+  #else
+      if(current_temperature_raw[0] <= minttemp_raw[0]) {
+  #endif
+          DEBUG_PRINT("min_temp_error: current_temperature_raw is %d, maxttemp_raw is %d, mintemp_raw is %d\n",
+              current_temperature_raw[0], maxttemp_raw[0], minttemp_raw[0]);
+          min_temp_error(0);
+      }
+  #endif
     }
-//--TOM--: disable min_temp checking
-#if 0
-#if HEATER_0_RAW_LO_TEMP > HEATER_0_RAW_HI_TEMP
-    if(current_temperature_raw[0] >= minttemp_raw[0]) {
-#else
-    if(current_temperature_raw[0] <= minttemp_raw[0]) {
-#endif
-        DEBUG_PRINT("min_temp_error: current_temperature_raw is %d, maxttemp_raw is %d, mintemp_raw is %d\n",
-            current_temperature_raw[0], maxttemp_raw[0], minttemp_raw[0]);
-        min_temp_error(0);
-    }
-#endif
+    nanosleep(&t, NULL);
   }
 }
 
