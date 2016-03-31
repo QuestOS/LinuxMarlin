@@ -2,6 +2,7 @@
 #include <unistd.h>
 #include <limits.h>
 #include <sys/sysinfo.h>
+#include <sys/time.h>
 #include <inttypes.h>
 #include <stdio.h>
 #include <string.h>
@@ -110,10 +111,20 @@ void digitalWrite(int pin, int val)
   WRITE(pin, val);
 }
 
-void delay(unsigned long time)
+//void delay(unsigned long time)
+//{
+//  unsigned long start = millis();
+//  while (millis() - start < time) ;
+//}
+
+void delay(unsigned long ms)
 {
-  unsigned long start = millis();
-  while (millis() - start < time) ;
+  usleep(ms * 1000);
+}
+
+void delayMicroseconds(unsigned long us)
+{
+	usleep(us);
 }
 
 float constrain(float x, float a, float b)
