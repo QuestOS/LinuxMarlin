@@ -46,115 +46,74 @@
 //===========================================================================
 //=============================public variables=============================
 //===========================================================================
-float homing_feedrate[] = HOMING_FEEDRATE;
-bool axis_relative_modes[] = AXIS_RELATIVE_MODES;
-int feedmultiply=100; //100->1 200->2
-int saved_feedmultiply;
+// none of variables here need to be protected by lock coz they won't be
+// accessed from except the main thread
 int extrudemultiply=100; //100->1 200->2
-float current_position[NUM_AXIS] = { 0.0, 0.0, 0.0, 0.0 };
 float add_homeing[3]={0,0,0};
-#ifdef DELTA
-float endstop_adj[3]={0,0,0};
-#endif
-float min_pos[3] = { X_MIN_POS_DEFAULT, Y_MIN_POS_DEFAULT, Z_MIN_POS_DEFAULT };
-float max_pos[3] = { X_MAX_POS_DEFAULT, Y_MAX_POS_DEFAULT, Z_MAX_POS_DEFAULT };
 bool axis_known_position[3] = {false, false, false};
-
-// Extruder offset
-#if EXTRUDERS > 1
-#ifndef DUAL_X_CARRIAGE
-  #define NUM_EXTRUDER_OFFSETS 2 // only in XY plane
-#else
-  #define NUM_EXTRUDER_OFFSETS 3 // supports offsets in XYZ plane
-#endif
-float extruder_offset[NUM_EXTRUDER_OFFSETS][EXTRUDERS] = {
-#if defined(EXTRUDER_OFFSET_X) && defined(EXTRUDER_OFFSET_Y)
-  EXTRUDER_OFFSET_X, EXTRUDER_OFFSET_Y
-#endif
-};
-#endif
+//--TOM--: the active extruder is always #0 coz that's the only one we've got
 char active_extruder = 0;
 int fanSpeed=0;
-#ifdef SERVO_ENDSTOPS
-  int servo_endstops[] = SERVO_ENDSTOPS;
-  int servo_endstop_angles[] = SERVO_ENDSTOP_ANGLES;
-#endif
-#ifdef BARICUDA
-int ValvePressure=0;
-int EtoPPressure=0;
+
+float base_min_pos[3] = { X_MIN_POS_DEFAULT, Y_MIN_POS_DEFAULT, Z_MIN_POS_DEFAULT };
+float base_max_pos[3] = { X_MAX_POS_DEFAULT, Y_MAX_POS_DEFAULT, Z_MAX_POS_DEFAULT };
+#ifdef ENABLE_AUTO_BED_LEVELING
+float bed_level_probe_offset[3] = {X_PROBE_OFFSET_FROM_EXTRUDER_DEFAULT,
+	Y_PROBE_OFFSET_FROM_EXTRUDER_DEFAULT, -Z_PROBE_OFFSET_FROM_EXTRUDER_DEFAULT};
 #endif
 
-#ifdef FWRETRACT
-  bool autoretract_enabled=true;
-  bool retracted=false;
-  float retract_length=3, retract_feedrate=17*60, retract_zlift=0.8;
-  float retract_recover_length=0, retract_recover_feedrate=8*60;
-#endif
-
-#ifdef ULTIPANEL
-  #ifdef PS_DEFAULT_OFF
-    bool powersupply = false;
-  #else
-	  bool powersupply = true;
-  #endif
-#endif
-
-#ifdef DELTA
-float delta[3] = {0.0, 0.0, 0.0};
-#endif
-
-  
 //===========================================================================
 //=============================private variables=============================
 //===========================================================================
-const char axis_codes[NUM_AXIS] = {'X', 'Y', 'Z', 'E'};
+static float homing_feedrate[] = HOMING_FEEDRATE;
+static bool axis_relative_modes[] = AXIS_RELATIVE_MODES;
+static int feedmultiply=100; //100->1 200->2
+static int saved_feedmultiply;
+static float min_pos[3] = { X_MIN_POS_DEFAULT, Y_MIN_POS_DEFAULT, Z_MIN_POS_DEFAULT };
+static float max_pos[3] = { X_MAX_POS_DEFAULT, Y_MAX_POS_DEFAULT, Z_MAX_POS_DEFAULT };
+static float current_position[NUM_AXIS] = { 0.0, 0.0, 0.0, 0.0 };
 static float destination[NUM_AXIS] = {  0.0, 0.0, 0.0, 0.0};
+static const char axis_codes[NUM_AXIS] = {'X', 'Y', 'Z', 'E'};
 static float offset[3] = {0.0, 0.0, 0.0};
 static bool home_all_axis = true;
 static float feedrate = 1500.0, next_feedrate, saved_feedrate;
 static long gcode_N, gcode_LastN, Stopped_gcode_LastN = 0;
-
 static bool relative_mode = false;  //Determines Absolute or Relative Coordinates
 
 static char cmdbuffer[MAX_CMD_SIZE];
-//static bool fromsd[BUFSIZE];
-static int bufindr = 0;
-static int bufindw = 0;
-static int buflen = 0;
-//static int i = 0;
 static char *strchr_pointer; // just a pointer to find chars in the cmd string like X, Y, Z, E, etc
-
-//const int sensitive_pins[] = SENSITIVE_PINS; // Sensitive pin list for M42
-
-//static float tt = 0;
-//static float bt = 0;
 
 //Inactivity shutdown variables
 static unsigned long previous_millis_cmd = 0;
 static unsigned long max_inactive_time = 0;
 static unsigned long stepper_inactive_time = DEFAULT_STEPPER_DEACTIVE_TIME*1000l;
 
-unsigned long starttime=0;
-unsigned long stoptime=0;
+static unsigned long starttime=0;
+static unsigned long stoptime=0;
 
 static uint8_t tmp_extruder;
 
+static bool target_direction;
+static bool Stopped = false;
 
-#if NUM_SERVOS > 0
-  Servo servos[NUM_SERVOS];
-#endif
+static char *file_buf = NULL;
+static int file_size;
 
-bool target_direction;
-bool Stopped = false;
+#define XYZ_CONSTS_FROM_CONFIG(type, array, CONFIG) \
+static const type array##_P[3] =        \
+    { X_##CONFIG, Y_##CONFIG, Z_##CONFIG };     \
+static inline type array(int axis)          \
+    { return array##_P[axis]; }
 
-/*typedef struct line {
-	char *gcode;
-	char *params;
-	line *next;
-} line;*/
+#define XYZ_DYN_FROM_CONFIG(type, array, CONFIG)	\
+static inline type array(int axis)			\
+    { type temp[3] = { X_##CONFIG, Y_##CONFIG, Z_##CONFIG };\
+      return temp[axis];}
 
-char *file_buf = NULL;
-int file_size;
+XYZ_DYN_FROM_CONFIG(float, base_home_pos,   HOME_POS);
+XYZ_DYN_FROM_CONFIG(float, max_length, MAX_LENGTH);
+XYZ_CONSTS_FROM_CONFIG(float, home_retract_mm, HOME_RETRACT_MM);
+XYZ_CONSTS_FROM_CONFIG(signed char, home_dir,  HOME_DIR);
 
 //===========================================================================
 //=============================ROUTINES=============================
@@ -197,29 +156,6 @@ void ikill()
   exit(1);
   //TODO
 }
-
-#define XYZ_CONSTS_FROM_CONFIG(type, array, CONFIG) \
-static const type array##_P[3] =        \
-    { X_##CONFIG, Y_##CONFIG, Z_##CONFIG };     \
-static inline type array(int axis)          \
-    { return array##_P[axis]; }
-
-#define XYZ_DYN_FROM_CONFIG(type, array, CONFIG)	\
-static inline type array(int axis)			\
-    { type temp[3] = { X_##CONFIG, Y_##CONFIG, Z_##CONFIG };\
-      return temp[axis];}
-
-float base_min_pos[3] = { X_MIN_POS_DEFAULT, Y_MIN_POS_DEFAULT, Z_MIN_POS_DEFAULT };
-float base_max_pos[3] = { X_MAX_POS_DEFAULT, Y_MAX_POS_DEFAULT, Z_MAX_POS_DEFAULT };
-#ifdef ENABLE_AUTO_BED_LEVELING
-float bed_level_probe_offset[3] = {X_PROBE_OFFSET_FROM_EXTRUDER_DEFAULT,
-	Y_PROBE_OFFSET_FROM_EXTRUDER_DEFAULT, -Z_PROBE_OFFSET_FROM_EXTRUDER_DEFAULT};
-#endif
-
-XYZ_DYN_FROM_CONFIG(float, base_home_pos,   HOME_POS);
-XYZ_DYN_FROM_CONFIG(float, max_length, MAX_LENGTH);
-XYZ_CONSTS_FROM_CONFIG(float, home_retract_mm, HOME_RETRACT_MM);
-XYZ_CONSTS_FROM_CONFIG(signed char, home_dir,  HOME_DIR);
 
 /***********************************/
 

@@ -136,17 +136,6 @@ void Config_ResetDefault()
     max_z_jerk=DEFAULT_ZJERK;
     max_e_jerk=DEFAULT_EJERK;
     add_homeing[0] = add_homeing[1] = add_homeing[2] = 0;
-#ifdef DELTA
-    endstop_adj[0] = endstop_adj[1] = endstop_adj[2] = 0;
-#endif
-#ifdef ULTIPANEL
-    plaPreheatHotendTemp = PLA_PREHEAT_HOTEND_TEMP;
-    plaPreheatHPBTemp = PLA_PREHEAT_HPB_TEMP;
-    plaPreheatFanSpeed = PLA_PREHEAT_FAN_SPEED;
-    absPreheatHotendTemp = ABS_PREHEAT_HOTEND_TEMP;
-    absPreheatHPBTemp = ABS_PREHEAT_HPB_TEMP;
-    absPreheatFanSpeed = ABS_PREHEAT_FAN_SPEED;
-#endif
 #ifdef ENABLE_AUTO_BED_LEVELING
     bed_level_probe_offset[0] = X_PROBE_OFFSET_FROM_EXTRUDER_DEFAULT;
     bed_level_probe_offset[1] = Y_PROBE_OFFSET_FROM_EXTRUDER_DEFAULT;
