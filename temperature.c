@@ -29,7 +29,6 @@
  */
 
 #include <signal.h>
-#include <time.h>
 #include <inttypes.h>
 #include <pthread.h>
 #include "Marlin.h"

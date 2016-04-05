@@ -34,7 +34,6 @@
 #include "temperature.h"
 #include "planner.h"
 #include "stepper.h"
-#include "timer.h"
 #include "language.h"
 #include <stdio.h>
 #include <stdlib.h>

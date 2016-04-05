@@ -30,7 +30,6 @@
 #include "speed_lookuptable.h"
 #include <mraa.h>
 #include "fastio.h"
-#include "timer.h"
 //#include "DAC.h"
 #if defined(DIGIPOTSS_PIN) && DIGIPOTSS_PIN > -1
 #include <SPI.h>
