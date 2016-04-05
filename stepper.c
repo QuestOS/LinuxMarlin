@@ -25,28 +25,22 @@
 #include "Marlin.h"
 #include "stepper.h"
 #include "planner.h"
-//#include "temperature.h"
 #include "language.h"
 #include "speed_lookuptable.h"
 #include <mraa.h>
 #include "fastio.h"
-//#include "DAC.h"
-#if defined(DIGIPOTSS_PIN) && DIGIPOTSS_PIN > -1
-#include <SPI.h>
-#endif
 
 
 //===========================================================================
 //=============================public variables  ============================
 //===========================================================================
-block_t *current_block;  // A pointer to the block currently being traced
 pthread_t stp_thread;
-
 
 //===========================================================================
 //=============================private variables ============================
 //===========================================================================
 //static makes it inpossible to be called from outside of this file by extern.!
+static block_t *current_block;  // A pointer to the block currently being traced
 
 //static int timerid;
 //#define ENABLE_STEPPER_DRIVER_INTERRUPT()   enable_timer(timerid)
@@ -61,12 +55,6 @@ static pthread_mutex_t stp_mtx;
 #define DISABLE_STEPPER_DRIVER_INTERRUPT() pthread_mutex_trylock(&stp_mtx)
 
 // Variables used by The Stepper Driver Interrupt
-static unsigned char out_bits;        // The next stepping-bits to be output
-static long counter_x,       // Counter variables for the bresenham line tracer
-            counter_y,
-            counter_z,
-            counter_e;
-volatile static unsigned long step_events_completed; // The number of step events executed in the current block
 static long acceleration_time, deceleration_time;
 //static unsigned long accelerate_until, decelerate_after, acceleration_rate, initial_rate, final_rate, nominal_rate;
 static unsigned short acc_step_rate; // needed for deccelaration start point
@@ -75,32 +63,19 @@ static unsigned short OCR1A_nominal;
 static unsigned short step_loops_nominal;
 
 volatile long endstops_trigsteps[3]={0,0,0};
-volatile long endstops_stepsTotal,endstops_stepsDone;
-static volatile bool endstop_x_hit=false;
-static volatile bool endstop_y_hit=false;
-static volatile bool endstop_z_hit=false;
-#ifdef ABORT_ON_ENDSTOP_HIT_FEATURE_ENABLED
-bool abort_on_endstop_hit = false;
-#endif
-#ifdef MOTOR_CURRENT_PWM_XY_PIN
-  int motor_current_setting[3] = DEFAULT_PWM_MOTOR_CURRENT;
-#endif
+static volatile bool endstop_x_hit=false, endstop_y_hit=false, endstop_z_hit=false;
 
-static bool old_x_min_endstop=false;
-static bool old_x_max_endstop=false;
-static bool old_y_min_endstop=false;
-static bool old_y_max_endstop=false;
-static bool old_z_min_endstop=false;
-static bool old_z_max_endstop=false;
-
+//--TOM--: will be used from other threads
 static bool check_endstops = true;
-
-volatile long count_position[NUM_AXIS] = { 0, 0, 0, 0};
-volatile signed char count_direction[NUM_AXIS] = { 1, 1, 1, 1};
+static volatile long count_position[NUM_AXIS] = { 0, 0, 0, 0};
 
 //===========================================================================
 //=============================functions         ============================
 //===========================================================================
+#define WRITE_E_STEP(v) WRITE(E0_STEP_PIN, v)
+#define NORM_E_DIR() WRITE(E0_DIR_PIN, !INVERT_E0_DIR)
+#define REV_E_DIR() WRITE(E0_DIR_PIN, INVERT_E0_DIR)
+
 
 #undef FORCE_INLINE
 #define FORCE_INLINE static __attribute__((always_inline)) inline
@@ -308,6 +283,13 @@ FORCE_INLINE void trapezoid_generator_reset() {
 static void * handler(void * arg)
 {
   struct timespec t;
+  // Counter variables for the bresenham line tracer
+  long counter_x, counter_y, counter_z, counter_e;
+  unsigned char out_bits;        // The next stepping-bits to be output
+  volatile unsigned long step_events_completed; // The number of step events executed in the current block
+  bool old_x_min_endstop=false, old_x_max_endstop=false, old_y_min_endstop=false, old_y_max_endstop=false,
+   old_z_min_endstop=false, old_z_max_endstop=false;
+  signed char count_direction[NUM_AXIS] = { 1, 1, 1, 1};
 
   /* delay the first run (500 * 0x4000) nanoseconds */
   delayMicroseconds(500 * 0x4000 / 1000);
