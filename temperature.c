@@ -244,6 +244,8 @@ static void updateTemperaturesFromRawValues()
         current_temperature[e] = analog2temp(current_temperature_raw[e], e);
     }
 
+    //--TOM--: need CRITICAL_SECTION coz temp_meas_ready will 
+    //be updated from temperature handler
     CRITICAL_SECTION_START;
     temp_meas_ready = false;
     CRITICAL_SECTION_END;

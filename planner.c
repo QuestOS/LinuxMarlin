@@ -204,6 +204,13 @@ void calculate_trapezoid_for_block(block_t *block, float entry_factor, float exi
 
   // block->accelerate_until = accelerate_steps;
   // block->decelerate_after = accelerate_steps+plateau_steps;
+  
+  // --TOM-- need CRITICAL_SECTION here coz it seems to me that
+  // blocks in the buffer will be constantly modified before they
+  // become locked by the stepper handler (by setting `busy` to true).
+  // And following four fields need to be updated atomically, so use
+  // CRITICAL_SECTION to avoid stepper handler from kicking in to lock it
+  // when we're doing batch updating
   CRITICAL_SECTION_START;  // Fill variables used by the stepper in a critical section
   if(block->busy == false) { // Don't update variables if block is busy.
     block->accelerate_until = accelerate_steps;

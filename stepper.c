@@ -687,6 +687,8 @@ void st_synchronize()
   }
 }
 
+//--TOM--: need CRITICAL_SECTION because count_position will be
+//updated from stepper handler.
 void st_set_position(const long x, const long y, const long z, const long e)
 {
   CRITICAL_SECTION_START;
