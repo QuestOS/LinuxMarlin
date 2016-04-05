@@ -58,7 +58,7 @@ static pthread_mutex_t stp_mtx;
     pthread_mutex_unlock(&stp_mtx);             \
   } while (0)
 
-#define DISABLE_STEPPER_DRIVER_INTERRUPT() pthread_mutex_lock(&stp_mtx)
+#define DISABLE_STEPPER_DRIVER_INTERRUPT() pthread_mutex_trylock(&stp_mtx)
 
 // Variables used by The Stepper Driver Interrupt
 static unsigned char out_bits;        // The next stepping-bits to be output
