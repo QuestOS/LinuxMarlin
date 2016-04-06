@@ -303,7 +303,7 @@ static void * handler(void * arg)
         DEBUG_PRINT("STEPPER steps to execute on each axis: (%ld, %ld, %ld, %ld)\n",
             current_block->steps_x, current_block->steps_y, current_block->steps_z,
             current_block->steps_e);
-        current_block->busy = true;
+        //current_block->busy = true;
         trapezoid_generator_reset();
         counter_x = -(current_block->step_event_count >> 1);
         counter_y = counter_x;
