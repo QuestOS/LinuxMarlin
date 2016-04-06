@@ -56,6 +56,7 @@
 #include "stepper.h"
 #include "temperature.h"
 #include "language.h"
+#include <pthread.h>
 
 //===========================================================================
 //=============================public variables ============================
@@ -211,14 +212,16 @@ void calculate_trapezoid_for_block(block_t *block, float entry_factor, float exi
   // And following four fields need to be updated atomically, so use
   // CRITICAL_SECTION to avoid stepper handler from kicking in to lock it
   // when we're doing batch updating
-  CRITICAL_SECTION_START;  // Fill variables used by the stepper in a critical section
+  //CRITICAL_SECTION_START;  // Fill variables used by the stepper in a critical section
+  pthread_spin_lock(&block_spinlock)
   if(block->busy == false) { // Don't update variables if block is busy.
     block->accelerate_until = accelerate_steps;
     block->decelerate_after = accelerate_steps+plateau_steps;
     block->initial_rate = initial_rate;
     block->final_rate = final_rate;
   }
-  CRITICAL_SECTION_END;
+  pthread_spin_unlock(&block_spinlock)
+  //CRITICAL_SECTION_END;
 }                    
 
 // Calculates the maximum allowable speed at this point when you must be able to reach target_velocity using the 
@@ -269,9 +272,11 @@ void planner_reverse_pass() {
   uint8_t block_index = block_buffer_head;
   
   //Make a local copy of block_buffer_tail, because the interrupt can alter it
-  CRITICAL_SECTION_START;
+  //CRITICAL_SECTION_START;
+  pthread_spin_lock(&block_spinlock)
   unsigned char tail = block_buffer_tail;
-  CRITICAL_SECTION_END
+  //CRITICAL_SECTION_END
+  pthread_spin_unlock(&block_spinlock)
   
   if(((block_buffer_head-tail + BLOCK_BUFFER_SIZE) & (BLOCK_BUFFER_SIZE - 1)) > 3) {
     block_index = (block_buffer_head - 3) & (BLOCK_BUFFER_SIZE - 1);
@@ -401,6 +406,8 @@ void plan_init() {
   //init and disable fan
   SET_OUTPUT(FAN_PIN);
   write_fan(0);
+
+  pthread_spin_init(&block_spinlock, NULL);
 }
 
 #ifdef AUTOTEMP
@@ -843,7 +850,9 @@ void plan_buffer_line(float x, float y, float z, const float e, float feed_rate,
   safe_speed/block->nominal_speed);
 
   // Move buffer head
+  pthread_spin_lock(&block_spinlock)
   block_buffer_head = next_buffer_head;
+  pthread_spin_unlock(&block_spinlock)
   //DEBUG_PRINT("block head upated to: %u\n", block_buffer_head);
 
   // Update position
