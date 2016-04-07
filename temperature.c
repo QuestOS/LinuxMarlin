@@ -41,9 +41,6 @@
 //===========================================================================
 pthread_t temp_thread;
 
-int target_temperature[EXTRUDERS] = { 0 };
-int current_temperature_raw[EXTRUDERS] = { 0 };
-float current_temperature[EXTRUDERS] = { 0.0 };
 #ifdef PIDTEMP
   float Kp=DEFAULT_Kp;
   float Ki=(DEFAULT_Ki*PID_dT);
@@ -56,6 +53,10 @@ float current_temperature[EXTRUDERS] = { 0.0 };
 //===========================================================================
 //=============================private variables============================
 //===========================================================================
+static int target_temperature[EXTRUDERS] = { 0 };
+static int current_temperature_raw[EXTRUDERS] = { 0 };
+static float current_temperature[EXTRUDERS] = { 0.0 };
+
 //static int timerid;
 static volatile bool temp_meas_ready = false;
 
@@ -244,11 +245,10 @@ static void updateTemperaturesFromRawValues()
         current_temperature[e] = analog2temp(current_temperature_raw[e], e);
     }
 
-    //--TOM--: need CRITICAL_SECTION coz temp_meas_ready will 
-    //be updated from temperature handler
-    CRITICAL_SECTION_START;
+    //--TOM--: i don't see why temp_meas_ready needs to be protected
+    //CRITICAL_SECTION_START;
     temp_meas_ready = false;
-    CRITICAL_SECTION_END;
+    //CRITICAL_SECTION_END;
 }
 
 void tp_init()
