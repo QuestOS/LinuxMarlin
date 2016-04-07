@@ -46,6 +46,8 @@ static block_t *current_block;  // A pointer to the block currently being traced
 //#define ENABLE_STEPPER_DRIVER_INTERRUPT()   enable_timer(timerid)
 //#define DISABLE_STEPPER_DRIVER_INTERRUPT()  disable_timer(timerid)
 static pthread_mutex_t stp_mtx;
+static pthread_spin_t count_spinlock;
+
 #define ENABLE_STEPPER_DRIVER_INTERRUPT()         \
   do {                                          \
     pthread_mutex_trylock(&stp_mtx);            \
@@ -435,10 +437,21 @@ static void * handler(void * arg)
       int8_t i;
       for(i=0; i < step_loops; i++) { // Take multiple steps per interrupt (For high speed moves)
         counter_x += current_block->steps_x;
+        pthread_spin_lock(&count_spinlock);
+        if (counter_x > 0)
+          count_position[X_AXIS]+=count_direction[X_AXIS];   
+        if (counter_y > 0)
+          count_position[Y_AXIS]+=count_direction[Y_AXIS];
+        if (counter_z > 0)
+          count_position[Z_AXIS]+=count_direction[Z_AXIS];
+        if (counter_e > 0) 
+          count_position[E_AXIS]+=count_direction[E_AXIS];
+        pthread_spin_unlock(&count_spinlock);
+
         if (counter_x > 0) {
           WRITE(X_STEP_PIN, !INVERT_X_STEP_PIN);
           counter_x -= current_block->step_event_count;
-          count_position[X_AXIS]+=count_direction[X_AXIS];   
+          //count_position[X_AXIS]+=count_direction[X_AXIS];   
           WRITE(X_STEP_PIN, INVERT_X_STEP_PIN);
         }
 
@@ -446,7 +459,7 @@ static void * handler(void * arg)
         if (counter_y > 0) {
           WRITE(Y_STEP_PIN, !INVERT_Y_STEP_PIN);
           counter_y -= current_block->step_event_count;
-          count_position[Y_AXIS]+=count_direction[Y_AXIS];
+          //count_position[Y_AXIS]+=count_direction[Y_AXIS];
           WRITE(Y_STEP_PIN, INVERT_Y_STEP_PIN);
         
         }
@@ -455,7 +468,7 @@ static void * handler(void * arg)
         if (counter_z > 0) {
           WRITE(Z_STEP_PIN, !INVERT_Z_STEP_PIN);
           counter_z -= current_block->step_event_count;
-          count_position[Z_AXIS]+=count_direction[Z_AXIS];
+          //count_position[Z_AXIS]+=count_direction[Z_AXIS];
           WRITE(Z_STEP_PIN, INVERT_Z_STEP_PIN);
           
         }
@@ -464,7 +477,7 @@ static void * handler(void * arg)
         if (counter_e > 0) {
           WRITE_E_STEP(!INVERT_E_STEP_PIN);
           counter_e -= current_block->step_event_count;
-          count_position[E_AXIS]+=count_direction[E_AXIS];
+          //count_position[E_AXIS]+=count_direction[E_AXIS];
           WRITE_E_STEP(INVERT_E_STEP_PIN);
         }
         step_events_completed += 1;
@@ -641,9 +654,12 @@ void st_init()
   TCNT1 = 0;
 */
 
-  //init the mutex
+  //init stepper mutex
   pthread_mutex_init(&stp_mtx, NULL);
   pthread_mutex_lock(&stp_mtx);
+
+  //init count_position spinlock
+  pthread_spin_init(&count_spinlock, PTHREAD_PROCESS_PRIVATE);
 
   //timerid = create_timer(handler);
   if (pthread_create(&stp_thread, NULL, &handler, NULL)) {
@@ -673,27 +689,33 @@ void st_synchronize()
 //updated from stepper handler.
 void st_set_position(const long x, const long y, const long z, const long e)
 {
-  CRITICAL_SECTION_START;
+  //CRITICAL_SECTION_START;
+  pthread_spin_lock(&count_spinlock);
   count_position[X_AXIS] = x;
   count_position[Y_AXIS] = y;
   count_position[Z_AXIS] = z;
   count_position[E_AXIS] = e;
-  CRITICAL_SECTION_END;
+  //CRITICAL_SECTION_END;
+  pthread_spin_unlock(&count_spinlock);
 }
 
 void st_set_e_position(const long e)
 {
-  CRITICAL_SECTION_START;
+  //CRITICAL_SECTION_START;
+  pthread_spin_lock(&count_spinlock);
   count_position[E_AXIS] = e;
-  CRITICAL_SECTION_END;
+  //CRITICAL_SECTION_END;
+  pthread_spin_unlock(&count_spinlock);
 }
 
 long st_get_position(uint8_t axis)
 {
   long count_pos;
-  CRITICAL_SECTION_START;
+  //CRITICAL_SECTION_START;
+  pthread_spin_lock(&count_spinlock);
   count_pos = count_position[axis];
-  CRITICAL_SECTION_END;
+  //CRITICAL_SECTION_END;
+  pthread_spin_unlock(&count_spinlock);
   return count_pos;
 }
 
