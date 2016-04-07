@@ -39,6 +39,10 @@
 //===========================================================================
 //=============================public variables============================
 //===========================================================================
+int target_temperature[EXTRUDERS] = { 0 };
+int current_temperature_raw[EXTRUDERS] = { 0 };
+float current_temperature[EXTRUDERS] = { 0.0 };
+
 pthread_t temp_thread;
 
 #ifdef PIDTEMP
@@ -53,10 +57,6 @@ pthread_t temp_thread;
 //===========================================================================
 //=============================private variables============================
 //===========================================================================
-static int target_temperature[EXTRUDERS] = { 0 };
-static int current_temperature_raw[EXTRUDERS] = { 0 };
-static float current_temperature[EXTRUDERS] = { 0.0 };
-
 //static int timerid;
 static volatile bool temp_meas_ready = false;
 

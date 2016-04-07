@@ -26,6 +26,7 @@
 
 #include "Marlin.h"
 #include "Configuration.h"
+#include <pthread.h>
 
 #ifdef ENABLE_AUTO_BED_LEVELING
 #include "vector_3.h"
