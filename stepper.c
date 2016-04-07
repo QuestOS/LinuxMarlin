@@ -263,7 +263,7 @@ FORCE_INLINE unsigned short calc_timer(unsigned short step_rate) {
 // Initializes the trapezoid generator from the current block. Called whenever a new
 // block begins.
 FORCE_INLINE void trapezoid_generator_reset() {
-  struct timespec t;
+  //struct timespec t;
   deceleration_time = 0;
   // step_rate to timer interval
   OCR1A_nominal = calc_timer(current_block->nominal_rate);
@@ -273,9 +273,9 @@ FORCE_INLINE void trapezoid_generator_reset() {
   acceleration_time = calc_timer(acc_step_rate);
   //OCR1A = acceleration_time;
   //set_time(timerid, 0, 500 * acceleration_time);
-  t.tv_sec= 0;
-  t.tv_nsec = 500 * acceleration_time;
-  nanosleep(&t, NULL);
+  //t.tv_sec= 0;
+  //t.tv_nsec = 500 * acceleration_time;
+  //nanosleep(&t, NULL);
 }
 
 // "The Stepper Driver Interrupt" - This timer interrupt is the workhorse.
