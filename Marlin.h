@@ -26,6 +26,7 @@
 #include <signal.h>
 
 /* only support this frequency value for now */
+//XXX: what is the value for MinnowMAX
 #define F_CPU 16000000
 
 #define ECHO_FLOAT(x) printf("%lf", x)
@@ -57,10 +58,10 @@ void manage_inactivity();
 bool IsStopped();
 void Stop();
 
-sigset_t global_interrupt, old_global_interrupt;
-extern inline void cli();
-extern inline void sei();
-unsigned char SREG;
+//sigset_t global_interrupt, old_global_interrupt;
+//extern inline void cli();
+//extern inline void sei();
+//unsigned char SREG;
 
 #if defined(X_ENABLE_PIN) && X_ENABLE_PIN > -1
   #define  enable_x() WRITE(X_ENABLE_PIN, X_ENABLE_ON)
@@ -111,10 +112,12 @@ unsigned char SREG;
 #endif
 
 
+/*
 #ifndef CRITICAL_SECTION_START
   #define CRITICAL_SECTION_START  cli();
   #define CRITICAL_SECTION_END    sei();
 #endif //CRITICAL_SECTION_START
+*/
 
 extern int extrudemultiply;
 extern int fanSpeed;

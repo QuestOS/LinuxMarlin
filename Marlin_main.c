@@ -121,17 +121,17 @@ XYZ_CONSTS_FROM_CONFIG(signed char, home_dir,  HOME_DIR);
 bool setTargetedHotend(int code);
 
 //block all signals to imitate disabling interrupts
-inline void
-cli()
-{
-  sigprocmask(SIG_SETMASK, &global_interrupt, &old_global_interrupt);
-}
-
-inline void
-sei()
-{
-  sigprocmask(SIG_SETMASK, &old_global_interrupt, NULL);
-}
+//inline void
+//cli()
+//{
+//  sigprocmask(SIG_SETMASK, &global_interrupt, &old_global_interrupt);
+//}
+//
+//inline void
+//sei()
+//{
+//  sigprocmask(SIG_SETMASK, &old_global_interrupt, NULL);
+//}
 
 float code_value()
 {
@@ -153,7 +153,7 @@ void ikill()
 {
   DEBUG_PRINT("kill\n");
   exit(1);
-  //TODO
+  //TODO: uninit all mraa stuffs
 }
 
 /***********************************/
@@ -230,8 +230,8 @@ int setup(char *path)
   st_init();
 
   //init global_interrupt
-  sigfillset(&global_interrupt);
-  sigemptyset(&old_global_interrupt);
+  //sigfillset(&global_interrupt);
+  //sigemptyset(&old_global_interrupt);
 
   return file;
 }

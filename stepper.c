@@ -661,7 +661,7 @@ void st_init()
   ENABLE_STEPPER_DRIVER_INTERRUPT();
 
   enable_endstops(true); // Start with endstops active. After homing they can be disabled
-  sei();
+  //sei();
 }
 
 // Block until all buffered steps are executed
