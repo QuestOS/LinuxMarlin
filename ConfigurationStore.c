@@ -111,6 +111,7 @@ void Config_PrintSettings()
 #endif
 
 
+extern void reset_acceleration_rates();
 void Config_ResetDefault()
 {
     float tmp1[]=DEFAULT_AXIS_STEPS_PER_UNIT;

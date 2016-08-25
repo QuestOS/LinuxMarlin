@@ -10,7 +10,8 @@ static const int minnowmax_pin_mapping[NGPIO+1] = {
 	477, 480, 478, 483, 479, 482,
 	499, 472, 498, 473, 485, 475,
 	484, 474, 338, 504, 339, 505,
-	340, 509, 
+	//340, 464, 
+	340, 509,  /* Turbot */
 };
 
 static const char minnowmax_pin_assignment[NGPIO+1][10] = {
@@ -36,7 +37,7 @@ void minnowmax_gpio_init()
 
 void minnowmax_i2c_init()
 {
-  temp_sensor = mraa_i2c_init_raw(0);
+  temp_sensor = mraa_i2c_init_raw(8);
   if (!temp_sensor) {
     errExit("mraa_i2c_init_raw");
   }

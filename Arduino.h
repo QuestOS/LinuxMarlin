@@ -15,7 +15,7 @@ float constrain(float x, float a, float b);
 int digitalRead(int pin);
 void digitalWrite(int pin, int val);
 void analogWrite(int pin, int val);
-
+void delayMicroseconds(unsigned long us);
 #endif
 
 /* vi: set et sw=2 sts=2: */

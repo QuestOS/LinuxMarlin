@@ -29,6 +29,7 @@
 #include "speed_lookuptable.h"
 #include <mraa.h>
 #include "fastio.h"
+#include "Arduino.h"
 
 
 //===========================================================================
@@ -666,6 +667,7 @@ void st_init()
 }
 
 // Block until all buffered steps are executed
+extern void manage_heater();
 void st_synchronize()
 {
   while( blocks_queued()) {

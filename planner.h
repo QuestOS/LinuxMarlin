@@ -150,6 +150,9 @@ static FORCE_INLINE bool blocks_queued()
   else
     return true;
 }
+
+void plan_init();
+void plan_set_e_position(const float e);
 #endif 
 
 /* vi: set et sw=2 sts=2: */
