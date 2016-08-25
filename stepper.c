@@ -306,7 +306,7 @@ static void * handler(void * arg)
         //set_time(timerid, 0, 500 * 2000);
         t.tv_sec= 0;
         t.tv_nsec = 500 * 2000;
-        nanosleep(&t, NULL);
+        //nanosleep(&t, NULL);
       }
     }
 
@@ -490,7 +490,7 @@ static void * handler(void * arg)
         //set_time(timerid, 0, 500 * timer);
         t.tv_sec = 0;
         t.tv_nsec = 500 * timer;
-        nanosleep(&t, NULL);
+        //nanosleep(&t, NULL);
         acceleration_time += timer;
       }
       else if (step_events_completed > (unsigned long int)current_block->decelerate_after) {
@@ -512,14 +512,14 @@ static void * handler(void * arg)
         //set_time(timerid, 0, 500 * timer);
         t.tv_sec = 0;
         t.tv_nsec = 500 * timer;
-        nanosleep(&t, NULL);
+        //nanosleep(&t, NULL);
         deceleration_time += timer;
       }
       else {
         //set_time(timerid, 0, 500 * OCR1A_nominal);
         t.tv_sec = 0;
         t.tv_nsec = 500 * OCR1A_nominal;
-        nanosleep(&t, NULL);
+        //nanosleep(&t, NULL);
         // ensure we're running at the correct step rate, even if we just came off an acceleration
         step_loops = step_loops_nominal;
       }
@@ -534,6 +534,7 @@ static void * handler(void * arg)
       }
     }
 
+    nanosleep(&t, NULL);
     //block if steppers are disabled
     pthread_mutex_lock(&stp_mtx);
     pthread_mutex_unlock(&stp_mtx);
