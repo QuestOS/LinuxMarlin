@@ -130,6 +130,10 @@ extern float base_min_pos[3];
 extern float base_max_pos[3];
 extern bool axis_known_position[3];
 
+#ifdef FAN_SOFT_PWM
+extern unsigned char fanSpeedSoftPwm;
+#endif
+
 #define max(a,b) \
    ({ __typeof__ (a) _a = (a); \
       __typeof__ (b) _b = (b); \

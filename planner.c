@@ -404,9 +404,11 @@ void plan_init() {
   previous_speed[3] = 0.0;
   previous_nominal_speed = 0.0;
 
+#ifndef FAN_SOFT_PWM
   //init and disable fan
   SET_OUTPUT(FAN_PIN);
   write_fan(0);
+#endif
 
   pthread_spin_init(&block_spinlock, PTHREAD_PROCESS_PRIVATE);
 }
@@ -486,7 +488,11 @@ void check_axes_activity()
     disable_e1();
     disable_e2(); 
   }
+#ifdef FAN_SOFT_PWM
+  fanSpeedSoftPwm = tail_fan_speed;
+#else
   write_fan(tail_fan_speed);
+#endif
 #ifdef AUTOTEMP
   getHighESpeed();
 #endif

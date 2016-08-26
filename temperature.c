@@ -54,6 +54,10 @@ pthread_t temp_thread;
   #endif
 #endif //PIDTEMP
 
+#ifdef FAN_SOFT_PWM
+unsigned char fanSpeedSoftPwm;
+#endif
+
 //===========================================================================
 //=============================private variables============================
 //===========================================================================
@@ -77,6 +81,9 @@ static volatile bool temp_meas_ready = false;
 #endif //PIDTEMP
 
 static unsigned char soft_pwm[EXTRUDERS];
+#ifdef FAN_SOFT_PWM
+static unsigned char soft_pwm_fan;
+#endif
 
 # define ARRAY_BY_EXTRUDERS(v1, v2, v3) { v1 }
 
@@ -267,6 +274,10 @@ void tp_init()
   //heater disabled after initialization
   SET_OUTPUT(HEATER_0_PIN);
   disable_heater();
+#ifdef FAN_SOFT_PWM
+  SET_OUTPUT(FAN_PIN);
+  soft_pwm_fan = fanSpeedSoftPwm / 2;
+#endif
 
   // --TOM--: we are reading temperature using I2C-ADC instead of analog pin.
   // Legitimately, i2c should be initialized here. But it is actually initialized 
@@ -349,6 +360,11 @@ void do_manage_heater()
       write_heater(1);
     else
       write_heater(0);
+#ifdef FAN_SOFT_PWM
+  soft_pwm_fan = fanSpeedSoftPwm / 2;
+  if (soft_pwm_fan > 0) WRITE(FAN_PIN, 1);
+  else WRITE(FAN_PIN, 0);
+#endif
   }
   if(soft_pwm_0 < pwm_count) {
     //DEBUG_PRINT("soft_pwm[0] is %d, soft_pwm_0 is %d, pwm_count is %d\n",
@@ -356,6 +372,9 @@ void do_manage_heater()
     write_heater(0);
   }
   
+#ifdef FAN_SOFT_PWM
+  if (soft_pwm_fan < pwm_count) WRITE(FAN_PIN, 0);
+#endif
   pwm_count += (1 << SOFT_PWM_SCALE);
   pwm_count &= 0x7f;
 }
