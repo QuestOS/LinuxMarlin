@@ -895,6 +895,19 @@ void process_commands()
     }
     break;
     #endif
+    case 303:
+    {
+      float temp = 150.0;
+      int e=0;
+      int c=5;
+      if (code_seen('E')) e=code_value();
+        if (e<0)
+          temp=70;
+      if (code_seen('S')) temp=code_value();
+      if (code_seen('C')) c=code_value();
+      PID_autotune(temp, e, c);
+    }
+    break;
     default:
       fprintf(stderr, "Unsupported M command found!\n");
       break;

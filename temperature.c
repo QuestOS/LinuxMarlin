@@ -1,19 +1,19 @@
 /*
   temperature.c - temperature control
   Part of Marlin
-  
+
  Copyright (C) 2011 Camiel Gubbels / Erik van der Zalm
- 
+
  This program is free software: you can redistribute it and/or modify
  it under the terms of the GNU General Public License as published by
  the Free Software Foundation, either version 3 of the License, or
  (at your option) any later version.
- 
+
  This program is distributed in the hope that it will be useful,
  but WITHOUT ANY WARRANTY; without even the implied warranty of
  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  GNU General Public License for more details.
- 
+
  You should have received a copy of the GNU General Public License
  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -22,8 +22,8 @@
  This firmware is a mashup between Sprinter and grbl.
   (https://github.com/kliment/Sprinter)
   (https://github.com/simen/grbl/tree)
- 
- It has preliminary support for Matthew Roberts advance algorithm 
+
+ It has preliminary support for Matthew Roberts advance algorithm
     http://reprap.org/pipermail/reprap-dev/2011-May/003323.html
 
  */
@@ -108,17 +108,152 @@ static void updateTemperaturesFromRawValues();
 //===========================================================================
 //static void handler(int sig, siginfo_t *si, void *uc);
 static void * handler(void * arg);
-    
+
+void PID_autotune(float temp, int extruder, int ncycles)
+{
+  float input = 0.0;
+  int cycles=0;
+  bool heating = true;
+
+  unsigned long temp_millis = millis();
+  unsigned long t1=temp_millis;
+  unsigned long t2=temp_millis;
+  long t_high = 0;
+  long t_low = 0;
+
+  long bias, d;
+  float Ku, Tu;
+  float Kp, Ki, Kd;
+  float max = 0, min = 10000;
+
+  ECHO_STRING("PID Autotune start");
+  printf("\n");
+
+  disable_heater(); // switch off all heaters.
+
+  soft_pwm[extruder] = (PID_MAX)/2;
+  bias = d = (PID_MAX)/2;
+
+ for(;;) {
+
+    if(temp_meas_ready == true) { // temp sample ready
+      updateTemperaturesFromRawValues();
+
+      input = current_temperature[extruder];
+
+      max=max(max,input);
+      min=min(min,input);
+      if(heating == true && input > temp) {
+        if(millis() - t2 > 5000) {
+          heating=false;
+          soft_pwm[extruder] = (bias - d) >> 1;
+          t1=millis();
+          t_high=t1 - t2;
+          max=temp;
+        }
+      }
+      if(heating == false && input < temp) {
+        if(millis() - t1 > 5000) {
+          heating=true;
+          t2=millis();
+          t_low=t2 - t1;
+          if(cycles > 0) {
+            bias += (d*(t_high - t_low))/(t_low + t_high);
+            bias = constrain(bias, 20 ,(extruder<0?(MAX_BED_POWER):(PID_MAX))-20);
+            if(bias > (extruder<0?(MAX_BED_POWER):(PID_MAX))/2) d = (extruder<0?(MAX_BED_POWER):(PID_MAX)) - 1 - bias;
+            else d = bias;
+
+            ECHO_STRING(" bias: "); ECHO_DECIMAL(bias);
+            printf("\n");
+            ECHO_STRING(" d: "); ECHO_DECIMAL(d);
+            printf("\n");
+            ECHO_STRING(" min: "); ECHO_FLOAT(min);
+            printf("\n");
+            ECHO_STRING(" max: "); ECHO_FLOAT(max);
+            printf("\n");
+            if(cycles > 2) {
+              Ku = (4.0*d)/(3.14159*(max-min)/2.0);
+              Tu = ((float)(t_low + t_high)/1000.0);
+              ECHO_STRING(" Ku: "); ECHO_FLOAT(Ku);
+              printf("\n");
+              ECHO_STRING(" Tu: "); ECHO_FLOAT(Tu);
+              printf("\n");
+              Kp = 0.6*Ku;
+              Ki = 2*Kp/Tu;
+              Kd = Kp*Tu/8;
+              ECHO_STRING(" Clasic PID ");
+              printf("\n");
+              ECHO_STRING(" Kp: "); ECHO_FLOAT(Kp);
+              printf("\n");
+              ECHO_STRING(" Ki: "); ECHO_FLOAT(Ki);
+              printf("\n");
+              ECHO_STRING(" Kd: "); ECHO_FLOAT(Kd);
+              printf("\n");
+              /*
+              Kp = 0.33*Ku;
+              Ki = Kp/Tu;
+              Kd = Kp*Tu/3;
+              SERIAL_PROTOCOLLNPGM(" Some overshoot ")
+              SERIAL_PROTOCOLPGM(" Kp: "); SERIAL_PROTOCOLLN(Kp);
+              SERIAL_PROTOCOLPGM(" Ki: "); SERIAL_PROTOCOLLN(Ki);
+              SERIAL_PROTOCOLPGM(" Kd: "); SERIAL_PROTOCOLLN(Kd);
+              Kp = 0.2*Ku;
+              Ki = 2*Kp/Tu;
+              Kd = Kp*Tu/3;
+              SERIAL_PROTOCOLLNPGM(" No overshoot ")
+              SERIAL_PROTOCOLPGM(" Kp: "); SERIAL_PROTOCOLLN(Kp);
+              SERIAL_PROTOCOLPGM(" Ki: "); SERIAL_PROTOCOLLN(Ki);
+              SERIAL_PROTOCOLPGM(" Kd: "); SERIAL_PROTOCOLLN(Kd);
+              */
+            }
+          }
+          soft_pwm[extruder] = (bias + d) >> 1;
+          cycles++;
+          min=temp;
+        }
+      }
+    }
+    if(input > (temp + 20)) {
+      ECHO_STRING("PID Autotune failed! Temperature too high");
+      printf("\n");
+      return;
+    }
+    if(millis() - temp_millis > 2000) {
+      int p;
+      p=soft_pwm[extruder];
+      ECHO_STRING("ok T:");
+
+      ECHO_FLOAT(input);
+      ECHO_STRING(" @:");
+      ECHO_DECIMAL(p);
+      printf("\n");
+
+      temp_millis = millis();
+    }
+    if(((millis() - t1) + (millis() - t2)) > (10L*60L*1000L*2L)) {
+      ECHO_STRING("PID Autotune failed! timeout");
+      printf("\n");
+      return;
+    }
+    if(cycles > ncycles) {
+      ECHO_STRING("PID Autotune finished! Put the Kp, Ki and Kd constants into Configuration.h");
+      printf("\n");
+      return;
+    }
+  }
+}
+
+
 void updatePID()
 {
 #ifdef PIDTEMP
 	int e;
-  for(e = 0; e < EXTRUDERS; e++) { 
-     temp_iState_max[e] = PID_INTEGRAL_DRIVE_MAX / Ki;  
+  for(e = 0; e < EXTRUDERS; e++) {
+     temp_iState_max[e] = PID_INTEGRAL_DRIVE_MAX / Ki;
   }
 #endif
 }
-  
+
 int getHeaterPower(int heater) {
   return soft_pwm[heater];
 }
@@ -129,12 +264,12 @@ void manage_heater()
   float pid_output;
 
   if(temp_meas_ready != true)   //better readability
-    return; 
+    return;
 
   updateTemperaturesFromRawValues();
 
 	int e;
-  for(e = 0; e < EXTRUDERS; e++) 
+  for(e = 0; e < EXTRUDERS; e++)
   {
 
   #ifdef PIDTEMP
@@ -166,7 +301,7 @@ void manage_heater()
           pid_output = constrain(pTerm[e] + iTerm[e] - dTerm[e], 0, PID_MAX);
         }
         temp_dState[e] = pid_input;
-    #else 
+    #else
           pid_output = constrain(target_temperature[e], 0, PID_MAX);
     #endif //PID_OPENLOOP
     #ifdef PID_DEBUG
@@ -181,7 +316,7 @@ void manage_heater()
     ECHO_STRING(" iTerm ");
     ECHO_FLOAT(iTerm[e]);
     ECHO_STRING(" dTerm ");
-    ECHO_FLOAT(dTerm[e]);  
+    ECHO_FLOAT(dTerm[e]);
     #endif //PID_DEBUG
   #else /* PID off */
     pid_output = 0;
@@ -195,7 +330,7 @@ void manage_heater()
     // Check if temperature is within the correct range
 
     /* --RW-- Commented out the following min temp check. */
-    //    if((current_temperature[e] > minttemp[e]) && (current_temperature[e] < maxttemp[e])) 
+    //    if((current_temperature[e] > minttemp[e]) && (current_temperature[e] < maxttemp[e]))
     if(current_temperature[e] < maxttemp[e])
     {
       soft_pwm[e] = (int)pid_output >> 1;
@@ -214,7 +349,7 @@ static float analog2temp(int raw, uint8_t e) {
       ECHO_DECIMAL((int)e);
       ECHO_STRING(" - Invalid extruder number !");
       ikill();
-  } 
+  }
 
   if(heater_ttbl_map[e] != NULL)
   {
@@ -226,8 +361,8 @@ static float analog2temp(int raw, uint8_t e) {
     {
       if ((*tt)[i][0] > raw)
       {
-        celsius = (*tt)[i-1][1] + 
-          (raw - (*tt)[i-1][0]) * 
+        celsius = (*tt)[i-1][1] +
+          (raw - (*tt)[i-1][0]) *
           (float)((*tt)[i][1] - (*tt)[i-1][1]) /
           (float)((*tt)[i][0] - (*tt)[i-1][0]);
         break;
@@ -261,9 +396,9 @@ static void updateTemperaturesFromRawValues()
 void tp_init()
 {
   int e;
-  // Finish init of mult extruder arrays 
+  // Finish init of mult extruder arrays
   for(e = 0; e < EXTRUDERS; e++) {
-    // populate with the first value 
+    // populate with the first value
     maxttemp[e] = maxttemp[0];
 #ifdef PIDTEMP
     temp_iState_min[e] = 0.0;
@@ -280,9 +415,9 @@ void tp_init()
 #endif
 
   // --TOM--: we are reading temperature using I2C-ADC instead of analog pin.
-  // Legitimately, i2c should be initialized here. But it is actually initialized 
+  // Legitimately, i2c should be initialized here. But it is actually initialized
   // in setup() because we want to cluster all board specific initializations
-  
+
   /* establish handler for timer signal */
   //timerid = create_timer(handler);
 
@@ -318,8 +453,8 @@ void tp_init()
 #endif //MAXTEMP
 }
 
-void setWatch() 
-{  
+void setWatch()
+{
 #ifdef WATCH_TEMP_PERIOD
   for (int e = 0; e < EXTRUDERS; e++)
   {
@@ -327,9 +462,9 @@ void setWatch()
     {
       watch_start_temp[e] = degHotend(e);
       watchmillis[e] = millis();
-    } 
+    }
   }
-#endif 
+#endif
 }
 
 void write_heater(int val)
@@ -345,6 +480,7 @@ void disable_heater()
   DEBUG_PRINT("disabling heater...\n");
   for(i=0;i<EXTRUDERS;i++)
     setTargetHotend(0,i);
+  target_temperature[0] = 0;
   soft_pwm[0]=0;
   write_heater(0);
 }
@@ -353,10 +489,10 @@ void do_manage_heater()
 {
   static unsigned char pwm_count = (1 << SOFT_PWM_SCALE);
   static unsigned char soft_pwm_0;
-  
+
   if(pwm_count == 0){
     soft_pwm_0 = soft_pwm[0];
-    if(soft_pwm_0 > 0) 
+    if(soft_pwm_0 > 0)
       write_heater(1);
     else
       write_heater(0);
@@ -371,7 +507,7 @@ void do_manage_heater()
         //soft_pwm[0], soft_pwm_0, pwm_count);
     write_heater(0);
   }
-  
+
 #ifdef FAN_SOFT_PWM
   if (soft_pwm_fan < pwm_count) WRITE(FAN_PIN, 0);
 #endif
@@ -439,7 +575,7 @@ static void * handler(void * arg)
       temp_state = 0;
       temp_count++;
     }
-    
+
     if(temp_count >= 16) { // 8 ms * 16 = 128ms.
       //Only update the raw values if they have been read. Else we could be updating them during reading.
       if (!temp_meas_ready) {
@@ -447,7 +583,7 @@ static void * handler(void * arg)
       }
       //XXX
       //current_temperature_raw[0] = 3529;
-      
+
       temp_meas_ready = true;
       temp_count = 0;
       raw_temp_0_value = 0;
