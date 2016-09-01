@@ -32,7 +32,6 @@
 
 // public functions
 void tp_init();  //initialise the heating
-void manage_heater(); //it is critical that this is called periodically.
 
 // low level conversion routines
 // do not use these routines and variables outside of temperature.cpp

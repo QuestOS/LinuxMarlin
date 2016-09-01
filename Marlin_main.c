@@ -245,7 +245,7 @@ void loop(int fd)
   }
 
   //check heater every n milliseconds
-  manage_heater();
+  //manage_heater();
   manage_inactivity();
   checkHitEndstops();
 }
@@ -769,7 +769,7 @@ void set_temp_and_wait()
       }
       codenum = millis();
     }
-    manage_heater();
+    //manage_heater();
     manage_inactivity();
       /* start/restart the TEMP_RESIDENCY_TIME timer whenever we reach target temp for the first time
         or when current temp falls outside the hysteresis after target temp was reached */

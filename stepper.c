@@ -671,7 +671,7 @@ extern void manage_heater();
 void st_synchronize()
 {
   while( blocks_queued()) {
-    manage_heater();
+    //manage_heater();
     manage_inactivity();
     //lcd_update();
   }
