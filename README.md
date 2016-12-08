@@ -3,6 +3,7 @@ controller based on Intel MinnowMAX. The tested software environment is Yocto Li
 with PREEMPT_PT patch and libmraa library.
 
 Quick guide:
+
 1. Copy the whole directory over to the Yocto Linux on MinnowMAX.
 
 2. do 'make'
